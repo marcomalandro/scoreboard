@@ -268,18 +268,109 @@
   /* Spades round modal */
   .modal { position: fixed; inset: 0; background: rgba(15,23,42,0.9); z-index: 150; display: none; align-items: center; justify-content: center; padding: 1rem; }
   .modal.show { display: flex; }
-  .modal-card { background: #1e293b; border-radius: 1rem; padding: 1rem; max-width: 380px; width: 100%; }
-  .modal-card h3 { color: #fbbf24; margin-bottom: 0.75rem; text-align: center; font-size: 1rem; }
-  .round-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
-  .round-label { font-size: 0.75rem; color: #94a3b8; text-align: center; }
-  .round-team { padding: 0.5rem; border-radius: 0.5rem; text-align: center; }
-  .round-team input { width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 0.4rem; border-radius: 0.35rem; font-size: 1.1rem; text-align: center; margin-top: 0.25rem; }
-  .round-team label { font-size: 0.7rem; color: rgba(255,255,255,0.85); }
-  .round-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
-  .round-actions button { flex: 1; padding: 0.6rem; border-radius: 0.5rem; border: none; font-size: 0.9rem; font-weight: 600; }
+  .modal-card { background: #1e293b; border-radius: 1rem; padding: 0; max-width: 460px; width: 100%; overflow: hidden; }
+  .modal-body { padding: 0 1rem 1rem; }
+  .step-banner {
+    padding: 0.9rem 1rem;
+    text-align: center;
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 1.05rem;
+    border-bottom: 3px solid rgba(0,0,0,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .step-banner .step-num {
+    font-size: 0.65rem;
+    background: rgba(0,0,0,0.4);
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .step-banner.step-called { background: linear-gradient(135deg, #d97706, #b45309); }
+  .step-banner.step-made { background: linear-gradient(135deg, #059669, #047857); }
+  .round-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 0.75rem; }
+  .round-label { font-size: 0.7rem; color: rgba(255,255,255,0.75); text-align: center; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.4rem; }
+  .round-team {
+    padding: 0.75rem 0.5rem;
+    border-radius: 0.75rem;
+    text-align: center;
+    border: 3px solid transparent;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .round-team label {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    display: block;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    margin-bottom: 0.5rem;
+  }
+  .num-input {
+    display: flex;
+    align-items: stretch;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+  }
+  .num-input button {
+    flex: 0 0 2.5rem;
+    background: rgba(0,0,0,0.35);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 0.5rem;
+    font-size: 1.4rem;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .num-input button:active { background: rgba(0,0,0,0.6); }
+  .num-input input {
+    flex: 1;
+    background: rgba(0,0,0,0.35);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 0.5rem;
+    font-size: 2.4rem;
+    font-weight: 800;
+    text-align: center;
+    padding: 0.15rem;
+    font-variant-numeric: tabular-nums;
+    -moz-appearance: textfield;
+    min-width: 0;
+  }
+  .num-input input::-webkit-outer-spin-button,
+  .num-input input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .num-input input:focus { outline: none; border-color: #fbbf24; }
+  .round-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+  .round-actions button { flex: 1; padding: 0.85rem; border-radius: 0.6rem; border: none; font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; }
   .round-actions .apply { background: #059669; color: #fff; }
+  .round-actions .apply:active { background: #047857; }
   .round-actions .cancel { background: #475569; color: #fff; }
-  .round-hint { font-size: 0.7rem; color: #94a3b8; text-align: center; margin-top: 0.5rem; }
+  .round-actions .cancel:active { background: #334155; }
+  .round-hint { font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.75rem; }
+  .called-pill {
+    display: block;
+    margin: 0.3rem auto 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid #fbbf24;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    color: #fbbf24;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .called-pill strong { font-size: 1.1rem; margin-left: 0.35rem; color: #fbbf24; font-weight: 800; }
+  /* step 2 team cards get a green outline to reinforce we're recording results */
+  #rmStep2 .round-team { border-color: rgba(16,185,129,0.5); }
 </style>
 </head>
 <body>
@@ -299,53 +390,74 @@
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v2.0</div>
+  <div class="credit">@marcomalandro · v2.1</div>
 
   <div class="heard" id="heard"></div>
 
   <div class="modal" id="roundModal">
     <div class="modal-card">
-      <h3 id="rmTitle">Books called</h3>
       <div id="rmStep1">
-        <div class="round-row">
-          <div class="round-team" style="background:#1e40af">
-            <label id="rt1name">Team 1</label>
-            <div class="round-label">Books called</div>
-            <input type="number" id="t1bid" min="0" max="13" inputmode="numeric">
-          </div>
-          <div class="round-label">vs</div>
-          <div class="round-team" style="background:#b91c1c">
-            <label id="rt2name">Team 2</label>
-            <div class="round-label">Books called</div>
-            <input type="number" id="t2bid" min="0" max="13" inputmode="numeric">
-          </div>
+        <div class="step-banner step-called">
+          <span class="step-num">Step 1 of 2</span>
+          <span>📣 Books Called</span>
         </div>
-        <div class="round-hint">Called 0 = nil (±100). Total bids can be anything.</div>
-        <div class="round-actions">
-          <button class="cancel" onclick="closeRound()">Cancel</button>
-          <button class="apply" onclick="stepToMade()">Next →</button>
+        <div class="modal-body">
+          <div class="round-row">
+            <div class="round-team" style="background:#1e40af">
+              <label id="rt1name">Team 1</label>
+              <div class="num-input">
+                <button type="button" onclick="bump('t1bid',-1)">−</button>
+                <input type="number" id="t1bid" min="0" max="13" step="1" inputmode="numeric">
+                <button type="button" onclick="bump('t1bid',+1)">+</button>
+              </div>
+            </div>
+            <div class="round-team" style="background:#b91c1c">
+              <label id="rt2name">Team 2</label>
+              <div class="num-input">
+                <button type="button" onclick="bump('t2bid',-1)">−</button>
+                <input type="number" id="t2bid" min="0" max="13" step="1" inputmode="numeric">
+                <button type="button" onclick="bump('t2bid',+1)">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="round-hint">How many books is each team calling? (0 = nil)</div>
+          <div class="round-actions">
+            <button class="cancel" onclick="closeRound()">Cancel</button>
+            <button class="apply" onclick="stepToMade()">Next →</button>
+          </div>
         </div>
       </div>
       <div id="rmStep2" style="display:none">
-        <div class="round-row">
-          <div class="round-team" style="background:#1e40af">
-            <label id="rt1name2">Team 1</label>
-            <div class="round-label">Called: <span id="rmT1Called">-</span></div>
-            <div class="round-label">Books made</div>
-            <input type="number" id="t1tricks" min="0" max="13" inputmode="numeric">
-          </div>
-          <div class="round-label">vs</div>
-          <div class="round-team" style="background:#b91c1c">
-            <label id="rt2name2">Team 2</label>
-            <div class="round-label">Called: <span id="rmT2Called">-</span></div>
-            <div class="round-label">Books made</div>
-            <input type="number" id="t2tricks" min="0" max="13" inputmode="numeric">
-          </div>
+        <div class="step-banner step-made">
+          <span class="step-num">Step 2 of 2</span>
+          <span>✅ Books Made</span>
         </div>
-        <div class="round-hint">Books made must total 13.</div>
-        <div class="round-actions">
-          <button class="cancel" onclick="stepToBids()">← Back</button>
-          <button class="apply" onclick="applyRound()">Apply</button>
+        <div class="modal-body">
+          <div class="round-row">
+            <div class="round-team" style="background:#1e40af">
+              <label id="rt1name2">Team 1</label>
+              <div class="called-pill">Called <strong id="rmT1Called">-</strong></div>
+              <div class="num-input">
+                <button type="button" onclick="bump('t1tricks',-1)">−</button>
+                <input type="number" id="t1tricks" min="0" max="13" step="1" inputmode="numeric">
+                <button type="button" onclick="bump('t1tricks',+1)">+</button>
+              </div>
+            </div>
+            <div class="round-team" style="background:#b91c1c">
+              <label id="rt2name2">Team 2</label>
+              <div class="called-pill">Called <strong id="rmT2Called">-</strong></div>
+              <div class="num-input">
+                <button type="button" onclick="bump('t2tricks',-1)">−</button>
+                <input type="number" id="t2tricks" min="0" max="13" step="1" inputmode="numeric">
+                <button type="button" onclick="bump('t2tricks',+1)">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="round-hint">How many did each team actually make? (Must total 13)</div>
+          <div class="round-actions">
+            <button class="cancel" onclick="stepToBids()">← Back</button>
+            <button class="apply" onclick="applyRound()">Apply</button>
+          </div>
         </div>
       </div>
     </div>
@@ -565,6 +677,14 @@ function stepToMade() {
   setTimeout(() => document.getElementById('t1tricks').focus(), 50);
 }
 function closeRound() { document.getElementById('roundModal').classList.remove('show'); }
+function bump(id, delta) {
+  const el = document.getElementById(id);
+  const cur = parseInt(el.value, 10);
+  let next = (isNaN(cur) ? 0 : cur) + delta;
+  if (next < 0) next = 0;
+  if (next > 13) next = 13;
+  el.value = next;
+}
 function applyRound() {
   const t1b = parseInt(document.getElementById('t1bid').value, 10);
   const t1t = parseInt(document.getElementById('t1tricks').value, 10);
