@@ -216,6 +216,55 @@
     overflow: hidden; text-overflow: ellipsis;
   }
   .heard.show { opacity: 1; }
+  /* Spades scorecard */
+  .sp-wrap { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 0.4rem; }
+  .sp-header { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; flex-shrink: 0; }
+  .sp-team {
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    border: 3px solid transparent;
+    overflow: hidden;
+  }
+  .sp-team.winner { box-shadow: 0 0 0 3px #10b981 inset; filter: brightness(1.15); }
+  .sp-team .name-input { font-size: 0.9rem; }
+  .sp-total { font-size: clamp(2.5rem, 12vmin, 5rem); font-weight: 800; line-height: 1; margin: 0.2rem 0; font-variant-numeric: tabular-nums; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .sp-bags { font-size: 0.75rem; color: rgba(255,255,255,0.85); }
+  .sp-bags strong { color: #fff; font-size: 0.9rem; }
+  .sp-history {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    background: #1e293b;
+    border-radius: 0.75rem;
+    padding: 0.4rem;
+  }
+  .sp-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .sp-table th, .sp-table td { padding: 0.3rem 0.35rem; text-align: center; font-size: 0.8rem; }
+  .sp-table thead th { color: #94a3b8; font-weight: 600; border-bottom: 1px solid #334155; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .sp-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.03); }
+  .sp-round-num { color: #64748b; font-size: 0.75rem; }
+  .sp-bid-made { color: #cbd5e1; }
+  .sp-delta { font-weight: 700; }
+  .sp-delta.pos { color: #10b981; }
+  .sp-delta.neg { color: #f87171; }
+  .sp-running { color: #fbbf24; font-weight: 600; font-size: 0.85rem; }
+  .sp-penalty { display: inline-block; font-size: 0.65rem; color: #f87171; margin-left: 0.25rem; padding: 0.05rem 0.3rem; border: 1px solid #f87171; border-radius: 0.25rem; }
+  .sp-empty { text-align: center; color: #475569; padding: 2rem 0.5rem; font-size: 0.85rem; }
+  .sp-addround {
+    flex-shrink: 0;
+    background: #059669;
+    color: #fff;
+    border: none;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .sp-addround:active { background: #047857; }
   /* Spades round modal */
   .modal { position: fixed; inset: 0; background: rgba(15,23,42,0.9); z-index: 150; display: none; align-items: center; justify-content: center; padding: 1rem; }
   .modal.show { display: flex; }
@@ -250,7 +299,7 @@
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v1.8</div>
+  <div class="credit">@marcomalandro · v1.9</div>
 
   <div class="heard" id="heard"></div>
 
@@ -487,11 +536,12 @@ function applyRound() {
   const [s1, b1] = scoreSpadesTeam(t1b, t1t);
   const [s2, b2] = scoreSpadesTeam(t2b, t2t);
   snapshot();
-  applyBags(0, b1);
-  applyBags(1, b2);
+  const p1 = applyBags(0, b1);
+  const p2 = applyBags(1, b2);
   state.sp.scores[0] += s1;
   state.sp.scores[1] += s2;
-  state.sp.rounds.push({ t1b, t1t, t2b, t2t, s1, s2 });
+  state.sp.rounds.push({ t1b, t1t, t2b, t2t, s1, s2, b1, b2, p1, p2,
+                        r1: state.sp.scores[0], r2: state.sp.scores[1] });
   checkSpadesWin();
   closeRound();
   render(); saveState();
@@ -503,10 +553,13 @@ function scoreSpadesTeam(bid, tricks) {
 }
 function applyBags(team, newBags) {
   state.sp.bags[team] += newBags;
+  let penalty = 0;
   while (state.sp.bags[team] >= 10) {
     state.sp.scores[team] -= 100;
     state.sp.bags[team] -= 10;
+    penalty -= 100;
   }
+  return penalty;
 }
 
 // ---------- Mode / opt ----------
@@ -540,8 +593,10 @@ function setOpt(v) {
 function render() {
   modeSel.value = state.mode;
   const m = state.mode;
-  roundBtn.style.display = (m === 'spades') ? '' : 'none';
-  nextBtn.style.display = (m === 'general' && state.gen.target === 0) ? 'none' : '';
+  // Spades has its own dedicated Round button in the body, so hide the controls one
+  roundBtn.style.display = 'none';
+  nextBtn.style.display = (m === 'spades' || (m === 'general' && state.gen.target === 0)) ? 'none' : '';
+  if (m !== 'spades') { board.className = 'players'; }
   if (m === 'pingpong') renderPP();
   else if (m === 'general') renderGen();
   else if (m === 'spades') renderSpades();
@@ -607,17 +662,77 @@ function renderGen() {
   bindNameInputs();
 }
 function renderSpades() {
-  board.dataset.count = 2;
+  board.dataset.count = 'spades';
+  board.removeAttribute('data-count');
+  board.className = 'sp-wrap';
   board.innerHTML = '';
   const t = state.sp.target;
-  const [a,b] = state.sp.scores;
+  const [a, b] = state.sp.scores;
   const winner = (a >= t && a > b) ? 0 : (b >= t && b > a) ? 1 : -1;
+
+  // Team headers
+  const header = document.createElement('div');
+  header.className = 'sp-header';
   for (let i = 0; i < 2; i++) {
-    const meta = `Bags: <strong>${state.sp.bags[i]}</strong> · to ${t}`;
-    const card = makeCard(i, COLORS[i], state.sp.names[i], state.sp.scores[i], meta);
-    if (i === winner) card.classList.add('winner');
-    board.appendChild(card);
+    const team = document.createElement('div');
+    team.className = 'sp-team' + (i === winner ? ' winner' : '');
+    team.dataset.idx = i;
+    team.style.background = COLORS[i];
+    team.innerHTML = `
+      <input class="name-input" data-nidx="${i}" value="${escapeHtml(state.sp.names[i])}">
+      <div class="sp-total">${state.sp.scores[i]}</div>
+      <div class="sp-bags">Bags: <strong>${state.sp.bags[i]}</strong> · to ${t}</div>
+    `;
+    header.appendChild(team);
   }
+  board.appendChild(header);
+
+  // Round history
+  const hist = document.createElement('div');
+  hist.className = 'sp-history';
+  if (state.sp.rounds.length === 0) {
+    hist.innerHTML = '<div class="sp-empty">No rounds yet. Tap "+ Round" to enter bids &amp; books.</div>';
+  } else {
+    const rows = state.sp.rounds.map((r, i) => {
+      const t1cls = r.s1 >= 0 ? 'pos' : 'neg';
+      const t2cls = r.s2 >= 0 ? 'pos' : 'neg';
+      const t1pen = r.p1 ? `<span class="sp-penalty">${r.p1}</span>` : '';
+      const t2pen = r.p2 ? `<span class="sp-penalty">${r.p2}</span>` : '';
+      return `<tr>
+        <td class="sp-round-num">${i + 1}</td>
+        <td>
+          <div><span class="sp-bid-made">${r.t1b}→${r.t1t}</span> <span class="sp-delta ${t1cls}">${r.s1 >= 0 ? '+' : ''}${r.s1}</span>${t1pen}</div>
+          <div class="sp-running">${r.r1}</div>
+        </td>
+        <td>
+          <div><span class="sp-bid-made">${r.t2b}→${r.t2t}</span> <span class="sp-delta ${t2cls}">${r.s2 >= 0 ? '+' : ''}${r.s2}</span>${t2pen}</div>
+          <div class="sp-running">${r.r2}</div>
+        </td>
+      </tr>`;
+    }).join('');
+    hist.innerHTML = `
+      <table class="sp-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>${escapeHtml(state.sp.names[0])}</th>
+            <th>${escapeHtml(state.sp.names[1])}</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    setTimeout(() => { hist.scrollTop = hist.scrollHeight; }, 0);
+  }
+  board.appendChild(hist);
+
+  // Add round button
+  const add = document.createElement('button');
+  add.className = 'sp-addround';
+  add.textContent = '+ Round';
+  add.onclick = openRound;
+  board.appendChild(add);
+
   bindNameInputs();
 }
 function bindNameInputs() {
