@@ -360,6 +360,24 @@
   .round-actions .cancel { background: #475569; color: #fff; }
   .round-actions .cancel:active { background: #334155; }
   .round-hint { font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.75rem; }
+  .round-error {
+    display: none;
+    background: rgba(239,68,68,0.15);
+    border: 1px solid #ef4444;
+    color: #fecaca;
+    padding: 0.5rem 0.6rem;
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+    text-align: center;
+    margin-top: 0.75rem;
+    font-weight: 600;
+  }
+  .round-error.show { display: block; animation: shake 0.4s; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+  }
   .called-pill {
     display: block;
     margin: 0.3rem auto 0.5rem;
@@ -395,7 +413,7 @@
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v2.1.3</div>
+  <div class="credit">@marcomalandro · v2.1.4</div>
 
   <div class="heard" id="heard"></div>
 
@@ -426,6 +444,7 @@
             </div>
           </div>
           <div class="round-hint">Minimum 4 per team. 0 = nil (±100).</div>
+          <div class="round-error" id="rmErr1"></div>
           <div class="round-actions">
             <button class="cancel" onclick="closeRound()">Cancel</button>
             <button class="apply" onclick="stepToMade()">Next →</button>
@@ -459,6 +478,7 @@
             </div>
           </div>
           <div class="round-hint">How many did each team actually make? (Must total 13)</div>
+          <div class="round-error" id="rmErr2"></div>
           <div class="round-actions">
             <button class="cancel" onclick="stepToBids()">← Back</button>
             <button class="apply" onclick="applyRound()">Apply</button>
@@ -661,6 +681,7 @@ function openRound() {
   document.getElementById('rt1name2').textContent = state.sp.names[0];
   document.getElementById('rt2name2').textContent = state.sp.names[1];
   for (const id of ['t1bid','t1tricks','t2bid','t2tricks']) document.getElementById(id).value = '';
+  clearRoundError(1); clearRoundError(2);
   stepToBids();
   document.getElementById('roundModal').classList.add('show');
   setTimeout(() => document.getElementById('t1bid').focus(), 50);
@@ -669,11 +690,24 @@ function stepToBids() {
   document.getElementById('rmStep1').style.display = '';
   document.getElementById('rmStep2').style.display = 'none';
 }
+function showRoundError(step, msg) {
+  const el = document.getElementById('rmErr' + step);
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+}
+function clearRoundError(step) {
+  const el = document.getElementById('rmErr' + step);
+  if (el) el.classList.remove('show');
+}
 function stepToMade() {
   const t1b = parseInt(document.getElementById('t1bid').value, 10);
   const t2b = parseInt(document.getElementById('t2bid').value, 10);
-  if ([t1b, t2b].some(v => isNaN(v) || v < 0 || v > 13)) { alert('Enter valid books called (0–13) for each team.'); return; }
-  if ([t1b, t2b].some(v => v > 0 && v < MIN_BID)) { alert('Books called must be 0 (nil) or at least ' + MIN_BID + '.'); return; }
+  if ([t1b, t2b].some(v => isNaN(v) || v < 0 || v > 13)) { showRoundError(1, 'Enter values 0–13 for each team.'); return; }
+  if ([t1b, t2b].some(v => v > 0 && v < MIN_BID)) { showRoundError(1, 'Books called must be 0 (nil) or at least ' + MIN_BID + '.'); return; }
+  clearRoundError(1);
   document.getElementById('rmT1Called').textContent = t1b;
   document.getElementById('rmT2Called').textContent = t2b;
   document.getElementById('rmStep1').style.display = 'none';
@@ -697,8 +731,9 @@ function applyRound() {
   const t1t = parseInt(document.getElementById('t1tricks').value, 10);
   const t2b = parseInt(document.getElementById('t2bid').value, 10);
   const t2t = parseInt(document.getElementById('t2tricks').value, 10);
-  if ([t1b,t1t,t2b,t2t].some(v => isNaN(v) || v < 0 || v > 13)) { alert('Enter valid values (0–13).'); return; }
-  if (t1t + t2t !== 13) { alert('Books made must total 13 (got ' + (t1t + t2t) + ').'); return; }
+  if ([t1b,t1t,t2b,t2t].some(v => isNaN(v) || v < 0 || v > 13)) { showRoundError(2, 'Enter values 0–13 for each team.'); return; }
+  if (t1t + t2t !== 13) { showRoundError(2, 'Books made must total 13 (got ' + (t1t + t2t) + ').'); return; }
+  clearRoundError(2);
   const [s1, b1] = scoreSpadesTeam(t1b, t1t);
   const [s2, b2] = scoreSpadesTeam(t2b, t2t);
   snapshot();
