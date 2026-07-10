@@ -460,7 +460,7 @@
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v2.3</div>
+  <div class="credit">@marcomalandro · v2.3.1</div>
 
   <div class="heard" id="heard"></div>
 
@@ -542,7 +542,7 @@
       <ul>
         <li><strong>Ping Pong</strong> — 2 players, first to N (11/15/21) with a 2-point lead wins, serve alternates.</li>
         <li><strong>General</strong> — 2–6 players, free-form scoring. Optional celebrate target.</li>
-        <li><strong>Spades</strong> — 2 teams, tap <em>+ Round</em> to enter books called then books made; standard scoring with sandbags. Race to 500.</li>
+        <li><strong>Spades</strong> — 2 teams, tap <em>+ Round</em> to enter books called then books made; standard scoring with overs (−100 per 10 overs). Race to 500.</li>
       </ul>
       <h3>Scoring input</h3>
       <ul>
@@ -950,7 +950,7 @@ function renderSpades() {
       <input class="name-input" data-nidx="${i}" value="${escapeHtml(state.sp.names[i])}">
       ${calledPill}
       <div class="sp-total">${state.sp.scores[i]}</div>
-      <div class="sp-bags">Bags: <strong>${state.sp.bags[i]}</strong> · to ${t}</div>
+      <div class="sp-bags">Overs: <strong>${state.sp.bags[i]}</strong> · to ${t}</div>
     `;
     header.appendChild(team);
   }
