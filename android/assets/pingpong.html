@@ -254,6 +254,23 @@
   .sp-running { color: #fbbf24; font-weight: 600; font-size: 0.85rem; }
   .sp-penalty { display: inline-block; font-size: 0.65rem; color: #f87171; margin-left: 0.25rem; padding: 0.05rem 0.3rem; border: 1px solid #f87171; border-radius: 0.25rem; }
   .sp-empty { text-align: center; color: #475569; padding: 2rem 0.5rem; font-size: 0.85rem; }
+  tr.sp-pending-row { background: rgba(217,119,6,0.12) !important; }
+  tr.sp-pending-row td { border-top: 1px dashed rgba(251,191,36,0.5); }
+  tr.sp-pending-row .sp-round-num::after { content: ' ⏳'; }
+  .sp-waiting { color: #64748b; }
+  .sp-pending-tag {
+    display: inline-block;
+    font-size: 0.6rem;
+    padding: 0.05rem 0.35rem;
+    background: #d97706;
+    color: #fff;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    margin-left: 0.3rem;
+    vertical-align: middle;
+  }
   .sp-actions { display: flex; gap: 0.4rem; align-items: stretch; flex-shrink: 0; flex-wrap: wrap; }
   .sp-addround {
     flex: 1 1 100%;
@@ -443,7 +460,7 @@
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v2.2.1</div>
+  <div class="credit">@marcomalandro · v2.3</div>
 
   <div class="heard" id="heard"></div>
 
@@ -942,7 +959,7 @@ function renderSpades() {
   // Round history
   const hist = document.createElement('div');
   hist.className = 'sp-history';
-  if (state.sp.rounds.length === 0) {
+  if (state.sp.rounds.length === 0 && !state.sp.pending) {
     hist.innerHTML = '<div class="sp-empty">No rounds yet. Tap "+ Round" — you\'ll enter books called first, then books made.</div>';
   } else {
     const rows = state.sp.rounds.map((r, i) => {
@@ -961,7 +978,22 @@ function renderSpades() {
           <div class="sp-running">${r.r2}</div>
         </td>
       </tr>`;
-    }).join('');
+    });
+    if (state.sp.pending) {
+      const n = state.sp.rounds.length + 1;
+      const p = state.sp.pending;
+      rows.push(`<tr class="sp-pending-row">
+        <td class="sp-round-num">${n}</td>
+        <td>
+          <div><span class="sp-bid-made">${p.t1b}→<span class="sp-waiting">?</span></span> <span class="sp-pending-tag">Called</span></div>
+          <div class="sp-running sp-waiting">—</div>
+        </td>
+        <td>
+          <div><span class="sp-bid-made">${p.t2b}→<span class="sp-waiting">?</span></span> <span class="sp-pending-tag">Called</span></div>
+          <div class="sp-running sp-waiting">—</div>
+        </td>
+      </tr>`);
+    }
     hist.innerHTML = `
       <table class="sp-table">
         <thead>
@@ -971,7 +1003,7 @@ function renderSpades() {
             <th>${escapeHtml(state.sp.names[1])}</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>${rows.join('')}</tbody>
       </table>
     `;
     setTimeout(() => { hist.scrollTop = hist.scrollHeight; }, 0);
