@@ -1,0 +1,11 @@
+android/build/
+android/gen/
+android/android.jar
+android/debug.keystore
+android/classes.jar
+android/sources.txt
+android/ic_launcher_512.png
+__pycache__/
+*.pyc
+*.apk
+.DS_Store
