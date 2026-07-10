@@ -499,8 +499,8 @@
     <button class="ctl" onclick="undo()" title="Undo">↶</button>
     <button class="ctl" onclick="newGame(true)" title="Next game" id="nextBtn">Next</button>
     <select class="ctl" id="mode" onchange="setMode(this.value)">
-      <option value="pingpong">Ping Pong</option>
       <option value="general">General</option>
+      <option value="pingpong">Ping Pong</option>
       <option value="spades">Spades</option>
       <option value="darts">Darts</option>
     </select>
@@ -510,7 +510,7 @@
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v2.5.1</div>
+  <div class="credit">@marcomalandro · v2.5.2</div>
 
   <div class="heard" id="heard"></div>
 
@@ -620,8 +620,8 @@
       <h2>Scoreboard</h2>
       <h3>Modes</h3>
       <ul>
-        <li><strong>Ping Pong</strong> — 2 players, first to N (11/15/21) with a 2-point lead wins, serve alternates.</li>
         <li><strong>General</strong> — 2–6 players, free-form scoring. Optional celebrate target.</li>
+        <li><strong>Ping Pong</strong> — 2 players, first to N (11/15/21) with a 2-point lead wins, serve alternates.</li>
         <li><strong>Spades</strong> — 2 teams, tap <em>+ Round</em> to enter books called then books made; standard scoring with overs (−100 per 10 overs). Race to 500.</li>
         <li><strong>Darts</strong> — 2 players, start at 301/501/701 and count down to zero. Tap <em>🎯 Enter dart</em> to pick the number, then Single / Double / Triple. Bust reverts the turn.</li>
       </ul>
@@ -649,7 +649,7 @@ const DEFAULT_SP_NAMES = ['Blue', 'Red'];
 
 // ---------- State ----------
 const state = {
-  mode: 'pingpong',
+  mode: 'general',
   pp: { scores: [0,0], games: [0,0], server: 0, target: 11, celebrated: false, names: [...DEFAULT_PP_NAMES] },
   gen: { scores: [0,0,0,0,0,0], count: 2, target: 0, celebrated: false, names: [...DEFAULT_GEN_NAMES] },
   sp: { scores: [0,0], bags: [0,0], target: 500, celebrated: false, names: [...DEFAULT_SP_NAMES], rounds: [], pending: null },
