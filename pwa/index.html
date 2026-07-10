@@ -87,6 +87,8 @@
     align-items: center;
   }
   .players[data-count="2"] .score { font-size: clamp(5rem, 34vmin, 16rem); }
+  .players[data-mode="darts"] .score { font-size: clamp(3rem, 20vmin, 8rem); padding: 0 0.4rem; }
+  .players[data-mode="darts"] .player { padding: 0.75rem 0.5rem 0.6rem; }
   .players[data-count="3"] .score { font-size: clamp(3.5rem, 22vmin, 11rem); }
   .players[data-count="4"] .score { font-size: clamp(3rem, 20vmin, 9rem); }
   .players[data-count="5"] .score,
@@ -429,6 +431,12 @@
   .dart-mult-btn.triple { background: #b91c1c; }
   .dart-mult-btn .mult-label { font-size: 0.7rem; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.05em; }
   .dart-mult-btn .mult-value { font-size: 1.6rem; font-weight: 800; margin-top: 0.15rem; font-variant-numeric: tabular-nums; }
+  .dart-wedge-container { display: flex; justify-content: center; margin: 0.5rem 0; }
+  .dart-wedge-container svg { max-width: 70%; max-height: 55vh; height: auto; display: block; }
+  .dart-wedge-container svg .zone { cursor: pointer; transition: filter 0.1s; }
+  .dart-wedge-container svg .zone:active { filter: brightness(0.7); }
+  .dart-wedge-container svg text { pointer-events: none; user-select: none; }
+  .dart-wedge-label { text-align: center; color: #94a3b8; font-size: 0.75rem; margin-top: 0.25rem; }
   .dart-throw-line { font-size: 0.72rem; color: rgba(255,255,255,0.85); text-align: center; line-height: 1.15; margin-top: 0.2rem; }
   .dart-actions { display: flex; gap: 0.4rem; align-items: stretch; flex-shrink: 0; flex-wrap: wrap; }
   .dart-throw-btn {
@@ -495,7 +503,7 @@
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v2.4</div>
+  <div class="credit">@marcomalandro · v2.4.1</div>
 
   <div class="heard" id="heard"></div>
 
@@ -516,23 +524,11 @@
       <div id="dmStep2" style="display:none">
         <div class="step-banner" style="background: linear-gradient(135deg, #059669, #047857)">
           <span class="step-num">Step 2 of 2</span>
-          <span id="dmMultTitle">Multiplier</span>
+          <span id="dmMultTitle">Which ring?</span>
         </div>
         <div class="modal-body">
-          <div class="dart-mult-grid">
-            <button type="button" class="dart-mult-btn single" onclick="applyDart(1)">
-              <div class="mult-label">Single</div>
-              <div class="mult-value" id="dmVSingle">—</div>
-            </button>
-            <button type="button" class="dart-mult-btn double" onclick="applyDart(2)">
-              <div class="mult-label">Double</div>
-              <div class="mult-value" id="dmVDouble">—</div>
-            </button>
-            <button type="button" class="dart-mult-btn triple" id="dmTripleBtn" onclick="applyDart(3)">
-              <div class="mult-label">Triple</div>
-              <div class="mult-value" id="dmVTriple">—</div>
-            </button>
-          </div>
+          <div class="dart-wedge-container" id="dartWedge"></div>
+          <div class="dart-wedge-label">Tap the ring where the dart landed</div>
           <div class="round-actions">
             <button class="cancel" onclick="dartStepBack()">← Back</button>
           </div>
@@ -960,6 +956,7 @@ function render() {
   const m = state.mode;
   roundBtn.style.display = 'none';
   nextBtn.style.display = (m === 'spades' || (m === 'general' && state.gen.target === 0)) ? 'none' : '';
+  if (m !== 'darts') board.removeAttribute('data-mode');
   if (m !== 'spades' && m !== 'darts') { board.className = 'players'; }
   if (m === 'pingpong') renderPP();
   else if (m === 'general') renderGen();
@@ -1145,6 +1142,7 @@ function renderSpades() {
 function renderDarts() {
   board.className = 'players';
   board.dataset.count = 2;
+  board.dataset.mode = 'darts';
   board.innerHTML = '';
   const d = state.dart;
   const winner = (d.scores[0] === 0) ? 0 : (d.scores[1] === 0) ? 1 : -1;
@@ -1231,13 +1229,46 @@ function populateDartGrid() {
 }
 function selectDartNumber(n) {
   dartPendingNum = n;
-  document.getElementById('dmMultTitle').textContent = (n === 25 ? 'Bull' : 'Number ' + n) + ' — pick multiplier';
-  document.getElementById('dmVSingle').textContent = n;
-  document.getElementById('dmVDouble').textContent = n * 2;
-  document.getElementById('dmVTriple').textContent = n === 25 ? '—' : (n * 3);
-  document.getElementById('dmTripleBtn').disabled = (n === 25);
+  document.getElementById('dmMultTitle').textContent = (n === 25 ? 'Bull' : 'Number ' + n) + ' — tap the ring';
+  document.getElementById('dartWedge').innerHTML = buildWedgeSVG(n);
   document.getElementById('dmStep1').style.display = 'none';
   document.getElementById('dmStep2').style.display = '';
+}
+function buildWedgeSVG(n) {
+  if (n === 25) {
+    // Bull target: two concentric circles
+    return `
+      <svg viewBox="0 0 200 200">
+        <circle class="zone" cx="100" cy="100" r="94" fill="#059669" onclick="applyDart(1)"/>
+        <text x="100" y="30" text-anchor="middle" fill="#fff" font-size="14" font-weight="800">SINGLE</text>
+        <text x="100" y="46" text-anchor="middle" fill="#fff" font-size="16" font-weight="800">25</text>
+        <circle class="zone" cx="100" cy="100" r="42" fill="#b91c1c" onclick="applyDart(2)"/>
+        <text x="100" y="98" text-anchor="middle" fill="#fff" font-size="12" font-weight="800">DOUBLE</text>
+        <text x="100" y="115" text-anchor="middle" fill="#fff" font-size="14" font-weight="800">50</text>
+      </svg>
+    `;
+  }
+  // Numbered wedge (tapered from top double ring down to inner tip)
+  return `
+    <svg viewBox="0 0 200 400">
+      <!-- Double ring (outer, thin) -->
+      <path class="zone" d="M 20,10 L 180,10 L 175,60 L 25,60 Z" fill="#d97706" onclick="applyDart(2)"/>
+      <text x="100" y="35" text-anchor="middle" fill="#fff" font-size="14" font-weight="800">DOUBLE</text>
+      <text x="100" y="52" text-anchor="middle" fill="#fff" font-size="16" font-weight="800">${n * 2}</text>
+      <!-- Single outer (wide) -->
+      <path class="zone" d="M 25,60 L 175,60 L 140,230 L 60,230 Z" fill="#1e40af" onclick="applyDart(1)"/>
+      <text x="100" y="130" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">SINGLE</text>
+      <text x="100" y="152" text-anchor="middle" fill="#fff" font-size="18" font-weight="800">${n}</text>
+      <!-- Triple ring (thin) -->
+      <path class="zone" d="M 60,230 L 140,230 L 133,270 L 67,270 Z" fill="#b91c1c" onclick="applyDart(3)"/>
+      <text x="100" y="253" text-anchor="middle" fill="#fff" font-size="13" font-weight="800">TRIPLE</text>
+      <text x="100" y="267" text-anchor="middle" fill="#fff" font-size="14" font-weight="800">${n * 3}</text>
+      <!-- Single inner -->
+      <path class="zone" d="M 67,270 L 133,270 L 108,380 L 92,380 Z" fill="#1e40af" onclick="applyDart(1)"/>
+      <text x="100" y="315" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">SINGLE</text>
+      <text x="100" y="332" text-anchor="middle" fill="#fff" font-size="14" font-weight="800">${n}</text>
+    </svg>
+  `;
 }
 function applyDart(mult) {
   if (dartPendingNum === null) return;
