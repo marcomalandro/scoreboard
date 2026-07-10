@@ -11,7 +11,18 @@ Two-player scoreboard with tap/swipe scoring, voice control ("tally blue point")
 
 ## PWA
 
-Live at `https://marcomalandro.github.io/scoreboard/pwa/` (once GitHub Pages is enabled on the `main` branch).
+**Live at:** [https://marcomalandro.github.io/scoreboard/pwa/](https://marcomalandro.github.io/scoreboard/pwa/)
+
+<p align="center">
+  <img src="docs/screenshot.jpg" alt="Scoreboard PWA screenshot" width="720" />
+</p>
+
+### Install on your phone
+
+- **iPhone (Safari):** open the URL, tap **Share** → **Add to Home Screen**. Voice needs iOS 14.5+.
+- **Android (Chrome):** open the URL, tap ⋮ → **Install app** (or **Add to Home Screen**).
+
+Opens fullscreen from the home-screen icon, no browser chrome. First tap of 🎙 will ask for microphone permission.
 
 To iterate locally, just open `pwa/index.html` in any browser — no build step.
 
