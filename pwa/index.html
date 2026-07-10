@@ -510,7 +510,7 @@
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v2.5</div>
+  <div class="credit">@marcomalandro · v2.5.1</div>
 
   <div class="heard" id="heard"></div>
 
@@ -1229,9 +1229,15 @@ let dartPendingNum = null;
 function openDartModal() {
   populateDartGrid();
   dartPendingNum = null;
-  document.getElementById('dmStep1').style.display = '';
-  document.getElementById('dmStep2').style.display = 'none';
-  document.getElementById('dartModal').classList.add('show');
+  const s1 = document.getElementById('dmStep1');
+  const s2 = document.getElementById('dmStep2');
+  s1.style.display = 'block';
+  s2.style.display = 'none';
+  const modal = document.getElementById('dartModal');
+  // Guard against synthetic click bleed-through from the card tap
+  modal.style.pointerEvents = 'none';
+  modal.classList.add('show');
+  setTimeout(() => { modal.style.pointerEvents = ''; }, 350);
 }
 function closeDart() { document.getElementById('dartModal').classList.remove('show'); }
 function dartStepBack() {
