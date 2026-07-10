@@ -443,7 +443,7 @@
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v2.2</div>
+  <div class="credit">@marcomalandro · v2.2.1</div>
 
   <div class="heard" id="heard"></div>
 
@@ -720,7 +720,7 @@ function saveBids() {
   const t1b = parseInt(document.getElementById('t1bid').value, 10);
   const t2b = parseInt(document.getElementById('t2bid').value, 10);
   if ([t1b, t2b].some(v => isNaN(v) || v < 0 || v > 13)) { showRoundError(1, 'Enter values 0–13 for each team.'); return; }
-  if ([t1b, t2b].some(v => v > 0 && v < MIN_BID)) { showRoundError(1, 'Books called must be 0 (nil) or at least ' + MIN_BID + '.'); return; }
+  if ([t1b, t2b].some(v => v > 0 && v < MIN_BID)) { showRoundError(1, 'Books called must be ' + MIN_BID + '+ (or 0 for nil).'); return; }
   snapshot();
   state.sp.pending = { t1b, t2b };
   closeRound();
