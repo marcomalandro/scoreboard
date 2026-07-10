@@ -299,34 +299,54 @@
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v1.9</div>
+  <div class="credit">@marcomalandro · v2.0</div>
 
   <div class="heard" id="heard"></div>
 
   <div class="modal" id="roundModal">
     <div class="modal-card">
-      <h3>New Round</h3>
-      <div class="round-row">
-        <div class="round-team" style="background:#1e40af">
-          <label id="rt1name">Team 1</label>
-          <div class="round-label">Bid</div>
-          <input type="number" id="t1bid" min="0" max="13" inputmode="numeric">
-          <div class="round-label">Tricks</div>
-          <input type="number" id="t1tricks" min="0" max="13" inputmode="numeric">
+      <h3 id="rmTitle">Books called</h3>
+      <div id="rmStep1">
+        <div class="round-row">
+          <div class="round-team" style="background:#1e40af">
+            <label id="rt1name">Team 1</label>
+            <div class="round-label">Books called</div>
+            <input type="number" id="t1bid" min="0" max="13" inputmode="numeric">
+          </div>
+          <div class="round-label">vs</div>
+          <div class="round-team" style="background:#b91c1c">
+            <label id="rt2name">Team 2</label>
+            <div class="round-label">Books called</div>
+            <input type="number" id="t2bid" min="0" max="13" inputmode="numeric">
+          </div>
         </div>
-        <div class="round-label">vs</div>
-        <div class="round-team" style="background:#b91c1c">
-          <label id="rt2name">Team 2</label>
-          <div class="round-label">Bid</div>
-          <input type="number" id="t2bid" min="0" max="13" inputmode="numeric">
-          <div class="round-label">Tricks</div>
-          <input type="number" id="t2tricks" min="0" max="13" inputmode="numeric">
+        <div class="round-hint">Called 0 = nil (±100). Total bids can be anything.</div>
+        <div class="round-actions">
+          <button class="cancel" onclick="closeRound()">Cancel</button>
+          <button class="apply" onclick="stepToMade()">Next →</button>
         </div>
       </div>
-      <div class="round-hint">Tricks total must equal 13. Bid 0 = nil (±100).</div>
-      <div class="round-actions">
-        <button class="cancel" onclick="closeRound()">Cancel</button>
-        <button class="apply" onclick="applyRound()">Apply</button>
+      <div id="rmStep2" style="display:none">
+        <div class="round-row">
+          <div class="round-team" style="background:#1e40af">
+            <label id="rt1name2">Team 1</label>
+            <div class="round-label">Called: <span id="rmT1Called">-</span></div>
+            <div class="round-label">Books made</div>
+            <input type="number" id="t1tricks" min="0" max="13" inputmode="numeric">
+          </div>
+          <div class="round-label">vs</div>
+          <div class="round-team" style="background:#b91c1c">
+            <label id="rt2name2">Team 2</label>
+            <div class="round-label">Called: <span id="rmT2Called">-</span></div>
+            <div class="round-label">Books made</div>
+            <input type="number" id="t2tricks" min="0" max="13" inputmode="numeric">
+          </div>
+        </div>
+        <div class="round-hint">Books made must total 13.</div>
+        <div class="round-actions">
+          <button class="cancel" onclick="stepToBids()">← Back</button>
+          <button class="apply" onclick="applyRound()">Apply</button>
+        </div>
       </div>
     </div>
   </div>
@@ -338,7 +358,7 @@
       <ul>
         <li><strong>Ping Pong</strong> — 2 players, first to N (11/15/21) with a 2-point lead wins, serve alternates.</li>
         <li><strong>General</strong> — 2–6 players, free-form scoring. Optional celebrate target.</li>
-        <li><strong>Spades</strong> — 2 teams, tap <em>Round</em> to enter bids &amp; tricks; standard scoring with sandbags. Race to 500.</li>
+        <li><strong>Spades</strong> — 2 teams, tap <em>+ Round</em> to enter books called then books made; standard scoring with sandbags. Race to 500.</li>
       </ul>
       <h3>Scoring input</h3>
       <ul>
@@ -521,9 +541,28 @@ function newGame(userInit) {
 function openRound() {
   document.getElementById('rt1name').textContent = state.sp.names[0];
   document.getElementById('rt2name').textContent = state.sp.names[1];
+  document.getElementById('rt1name2').textContent = state.sp.names[0];
+  document.getElementById('rt2name2').textContent = state.sp.names[1];
   for (const id of ['t1bid','t1tricks','t2bid','t2tricks']) document.getElementById(id).value = '';
+  stepToBids();
   document.getElementById('roundModal').classList.add('show');
   setTimeout(() => document.getElementById('t1bid').focus(), 50);
+}
+function stepToBids() {
+  document.getElementById('rmStep1').style.display = '';
+  document.getElementById('rmStep2').style.display = 'none';
+  document.getElementById('rmTitle').textContent = 'Books called';
+}
+function stepToMade() {
+  const t1b = parseInt(document.getElementById('t1bid').value, 10);
+  const t2b = parseInt(document.getElementById('t2bid').value, 10);
+  if ([t1b, t2b].some(v => isNaN(v) || v < 0 || v > 13)) { alert('Enter valid books called (0–13) for each team.'); return; }
+  document.getElementById('rmT1Called').textContent = t1b;
+  document.getElementById('rmT2Called').textContent = t2b;
+  document.getElementById('rmStep1').style.display = 'none';
+  document.getElementById('rmStep2').style.display = '';
+  document.getElementById('rmTitle').textContent = 'Books made';
+  setTimeout(() => document.getElementById('t1tricks').focus(), 50);
 }
 function closeRound() { document.getElementById('roundModal').classList.remove('show'); }
 function applyRound() {
@@ -531,8 +570,8 @@ function applyRound() {
   const t1t = parseInt(document.getElementById('t1tricks').value, 10);
   const t2b = parseInt(document.getElementById('t2bid').value, 10);
   const t2t = parseInt(document.getElementById('t2tricks').value, 10);
-  if ([t1b,t1t,t2b,t2t].some(v => isNaN(v) || v < 0 || v > 13)) { alert('Enter valid bids and tricks (0–13).'); return; }
-  if (t1t + t2t !== 13) { alert('Tricks must total 13 (got ' + (t1t + t2t) + ').'); return; }
+  if ([t1b,t1t,t2b,t2t].some(v => isNaN(v) || v < 0 || v > 13)) { alert('Enter valid values (0–13).'); return; }
+  if (t1t + t2t !== 13) { alert('Books made must total 13 (got ' + (t1t + t2t) + ').'); return; }
   const [s1, b1] = scoreSpadesTeam(t1b, t1t);
   const [s2, b2] = scoreSpadesTeam(t2b, t2t);
   snapshot();
@@ -691,7 +730,7 @@ function renderSpades() {
   const hist = document.createElement('div');
   hist.className = 'sp-history';
   if (state.sp.rounds.length === 0) {
-    hist.innerHTML = '<div class="sp-empty">No rounds yet. Tap "+ Round" to enter bids &amp; books.</div>';
+    hist.innerHTML = '<div class="sp-empty">No rounds yet. Tap "+ Round" — you\'ll enter books called first, then books made.</div>';
   } else {
     const rows = state.sp.rounds.map((r, i) => {
       const t1cls = r.s1 >= 0 ? 'pos' : 'neg';
