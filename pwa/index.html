@@ -390,7 +390,7 @@
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v2.1</div>
+  <div class="credit">@marcomalandro · v2.1.1</div>
 
   <div class="heard" id="heard"></div>
 
@@ -663,7 +663,6 @@ function openRound() {
 function stepToBids() {
   document.getElementById('rmStep1').style.display = '';
   document.getElementById('rmStep2').style.display = 'none';
-  document.getElementById('rmTitle').textContent = 'Books called';
 }
 function stepToMade() {
   const t1b = parseInt(document.getElementById('t1bid').value, 10);
@@ -673,7 +672,6 @@ function stepToMade() {
   document.getElementById('rmT2Called').textContent = t2b;
   document.getElementById('rmStep1').style.display = 'none';
   document.getElementById('rmStep2').style.display = '';
-  document.getElementById('rmTitle').textContent = 'Books made';
   setTimeout(() => document.getElementById('t1tricks').focus(), 50);
 }
 function closeRound() { document.getElementById('roundModal').classList.remove('show'); }
