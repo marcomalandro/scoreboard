@@ -87,8 +87,14 @@
     align-items: center;
   }
   .players[data-count="2"] .score { font-size: clamp(5rem, 34vmin, 16rem); }
-  .players[data-mode="darts"] .score { font-size: clamp(3rem, 20vmin, 8rem); padding: 0 0.4rem; }
-  .players[data-mode="darts"] .player { padding: 0.75rem 0.5rem 0.6rem; }
+  .players[data-mode="darts"] .player { padding: 0.75rem 0.4rem 0.5rem; }
+  .players[data-mode="darts"][data-count="2"] .score { font-size: clamp(3rem, 20vmin, 8rem); padding: 0 0.4rem; }
+  .players[data-mode="darts"][data-count="3"] .score { font-size: clamp(2.5rem, 15vmin, 6rem); padding: 0 0.4rem; }
+  .players[data-mode="darts"][data-count="4"] .score { font-size: clamp(2rem, 13vmin, 5rem); padding: 0 0.4rem; }
+  .players[data-mode="darts"][data-count="5"] .score,
+  .players[data-mode="darts"][data-count="6"] .score { font-size: clamp(1.7rem, 11vmin, 4.5rem); padding: 0 0.3rem; }
+  .players[data-mode="darts"] .player.tappable { box-shadow: 0 0 0 3px rgba(251,191,36,0.55) inset; }
+  .players[data-mode="darts"] .tap-hint { font-size: 0.65rem; opacity: 0.7; margin-top: 0.15rem; }
   .players[data-count="3"] .score { font-size: clamp(3.5rem, 22vmin, 11rem); }
   .players[data-count="4"] .score { font-size: clamp(3rem, 20vmin, 9rem); }
   .players[data-count="5"] .score,
@@ -499,11 +505,12 @@
       <option value="darts">Darts</option>
     </select>
     <select class="ctl" id="opt" onchange="setOpt(this.value)"></select>
+    <select class="ctl" id="opt2" onchange="setOpt2(this.value)" style="display:none"></select>
     <button class="ctl" onclick="openRound()" id="roundBtn" style="display:none">Round</button>
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v2.4.1</div>
+  <div class="credit">@marcomalandro · v2.5</div>
 
   <div class="heard" id="heard"></div>
 
@@ -646,7 +653,7 @@ const state = {
   pp: { scores: [0,0], games: [0,0], server: 0, target: 11, celebrated: false, names: [...DEFAULT_PP_NAMES] },
   gen: { scores: [0,0,0,0,0,0], count: 2, target: 0, celebrated: false, names: [...DEFAULT_GEN_NAMES] },
   sp: { scores: [0,0], bags: [0,0], target: 500, celebrated: false, names: [...DEFAULT_SP_NAMES], rounds: [], pending: null },
-  dart: { start: 501, scores: [501,501], turnStart: 501, turn: 0, currentTurn: [], turns: [], celebrated: false, names: ['Blue','Red'] },
+  dart: { start: 501, playerCount: 2, scores: [501,501,501,501,501,501], turnStart: 501, turn: 0, currentTurn: [], turns: [], celebrated: false, names: [...DEFAULT_GEN_NAMES] },
   history: [],
 };
 
@@ -654,6 +661,7 @@ const board = document.getElementById('board');
 const nextBtn = document.getElementById('nextBtn');
 const roundBtn = document.getElementById('roundBtn');
 const optSel = document.getElementById('opt');
+const opt2Sel = document.getElementById('opt2');
 const modeSel = document.getElementById('mode');
 
 // ---------- Snapshots / Undo ----------
@@ -780,7 +788,7 @@ function resetMatch() {
   if (m === 'spades') Object.assign(state.sp, { scores: [0,0], bags: [0,0], celebrated: false, rounds: [], pending: null });
   if (m === 'darts') {
     const s = state.dart.start;
-    Object.assign(state.dart, { scores: [s, s], turnStart: s, turn: 0, currentTurn: [], turns: [], celebrated: false });
+    Object.assign(state.dart, { scores: new Array(6).fill(s), turnStart: s, turn: 0, currentTurn: [], turns: [], celebrated: false });
   }
   state.history = [];
   render(); saveState();
@@ -799,7 +807,7 @@ function newGame(userInit) {
   } else if (m === 'darts') {
     if (userInit && !state.dart.celebrated && !confirm('Start next game? Current scores reset.')) return;
     const s = state.dart.start;
-    Object.assign(state.dart, { scores: [s, s], turnStart: s, turn: 0, currentTurn: [], turns: [], celebrated: false });
+    Object.assign(state.dart, { scores: new Array(6).fill(s), turnStart: s, turn: 0, currentTurn: [], turns: [], celebrated: false });
   }
   state.history = [];
   render(); saveState();
@@ -932,6 +940,30 @@ function populateOpt() {
     for (const v of [301, 501, 701]) optSel.add(new Option('from ' + v, v));
     optSel.value = state.dart.start;
   }
+  // Secondary selector: only used by darts (player count)
+  opt2Sel.innerHTML = '';
+  if (state.mode === 'darts') {
+    for (const v of [2,3,4,5,6]) opt2Sel.add(new Option(v + ' players', v));
+    opt2Sel.value = state.dart.playerCount;
+    opt2Sel.style.display = '';
+  } else {
+    opt2Sel.style.display = 'none';
+  }
+}
+function setOpt2(v) {
+  const n = parseInt(v, 10);
+  if (state.mode === 'darts') {
+    if (state.dart.turns.length === 0 && state.dart.currentTurn.length === 0) {
+      state.dart.playerCount = n;
+      if (state.dart.turn >= n) state.dart.turn = 0;
+      state.dart.turnStart = state.dart.scores[state.dart.turn];
+    } else {
+      // Mid-game: still update but only affects rotation going forward
+      state.dart.playerCount = n;
+      if (state.dart.turn >= n) state.dart.turn = 0;
+    }
+  }
+  render(); saveState();
 }
 function setOpt(v) {
   const n = parseInt(v, 10);
@@ -941,7 +973,7 @@ function setOpt(v) {
   else if (state.mode === 'darts') {
     if (state.dart.turns.length === 0 && state.dart.currentTurn.length === 0) {
       state.dart.start = n;
-      state.dart.scores = [n, n];
+      state.dart.scores = new Array(6).fill(n);
       state.dart.turnStart = n;
     } else {
       state.dart.start = n; // will apply next game
@@ -1140,53 +1172,56 @@ function renderSpades() {
   bindNameInputs();
 }
 function renderDarts() {
+  const d = state.dart;
+  const n = d.playerCount;
   board.className = 'players';
-  board.dataset.count = 2;
+  board.dataset.count = n;
   board.dataset.mode = 'darts';
   board.innerHTML = '';
-  const d = state.dart;
-  const winner = (d.scores[0] === 0) ? 0 : (d.scores[1] === 0) ? 1 : -1;
-  for (let i = 0; i < 2; i++) {
+  let winner = -1;
+  for (let i = 0; i < n; i++) if (d.scores[i] === 0) { winner = i; break; }
+  for (let i = 0; i < n; i++) {
     let metaHtml;
     if (i === d.turn && winner === -1) {
       const parts = d.currentTurn.map(x => x.v);
       const total = parts.reduce((s, v) => s + v, 0);
       const partsStr = parts.length ? parts.join(' + ') + (parts.length > 1 ? ' = ' + total : '') : '—';
-      metaHtml = `<div>Turn ${d.currentTurn.length}/3</div><div class="dart-throw-line">${partsStr}</div>`;
+      metaHtml = `<div>Turn ${d.currentTurn.length}/3</div>
+                  <div class="dart-throw-line">${partsStr}</div>
+                  <div class="tap-hint">🎯 tap card to throw</div>`;
     } else {
       const last = d.turns.filter(x => x.player === i && !x.bust).slice(-1)[0];
       metaHtml = last ? `Last turn: <strong>${last.total}</strong>` : `From <strong>${d.start}</strong>`;
     }
     const card = makeCard(i, COLORS[i], d.names[i], d.scores[i], metaHtml);
-    if (i === d.turn && winner === -1) card.classList.add('serving');
+    if (i === d.turn && winner === -1) card.classList.add('serving', 'tappable');
     if (i === winner) card.classList.add('winner');
     board.appendChild(card);
   }
-  // action bar
-  const actions = document.createElement('div');
-  actions.className = 'dart-actions';
-  actions.style.cssText = 'display:flex;gap:0.4rem;flex-wrap:wrap;flex-shrink:0;grid-column:1/-1';
-  if (winner === -1) {
-    const throwBtn = document.createElement('button');
-    throwBtn.className = 'dart-throw-btn';
-    throwBtn.textContent = `🎯 ${d.names[d.turn]} — Enter dart`;
-    throwBtn.onclick = openDartModal;
-    actions.appendChild(throwBtn);
-    if (d.currentTurn.length > 0) {
-      const endBtn = document.createElement('button');
-      endBtn.className = 'dart-end-btn';
-      endBtn.textContent = 'End turn';
-      endBtn.onclick = () => { snapshot(); endDartTurn(); render(); saveState(); };
-      actions.appendChild(endBtn);
-      const switchBtn = document.createElement('button');
-      switchBtn.className = 'dart-end-btn';
-      switchBtn.textContent = 'Switch player';
-      switchBtn.onclick = () => { snapshot(); state.dart.turn = 1 - d.turn; state.dart.currentTurn = []; state.dart.turnStart = state.dart.scores[state.dart.turn]; render(); saveState(); };
-      actions.appendChild(switchBtn);
-    }
+  // Small action bar only when mid-turn
+  if (winner === -1 && d.currentTurn.length > 0) {
+    const actions = document.createElement('div');
+    actions.className = 'dart-actions';
+    actions.style.cssText = 'display:flex;gap:0.4rem;flex-wrap:wrap;flex-shrink:0;grid-column:1/-1';
+    const endBtn = document.createElement('button');
+    endBtn.className = 'dart-end-btn';
+    endBtn.textContent = 'End turn';
+    endBtn.onclick = () => { snapshot(); endDartTurn(); render(); saveState(); };
+    actions.appendChild(endBtn);
+    board.appendChild(actions);
   }
-  board.appendChild(actions);
   bindNameInputs();
+}
+
+function openDartFor(idx) {
+  if (idx !== state.dart.turn) {
+    snapshot();
+    state.dart.turn = idx;
+    state.dart.currentTurn = [];
+    state.dart.turnStart = state.dart.scores[idx];
+    render(); saveState();
+  }
+  openDartModal();
 }
 
 // Dart entry
@@ -1285,7 +1320,7 @@ function applyDartValue(value, n, m) {
     state.dart.scores[p] = state.dart.turnStart;
     state.dart.turns.push({ player: p, darts: [...state.dart.currentTurn], total: 0, bust: true });
     state.dart.currentTurn = [];
-    state.dart.turn = 1 - p;
+    state.dart.turn = (p + 1) % state.dart.playerCount;
     state.dart.turnStart = state.dart.scores[state.dart.turn];
   } else if (state.dart.scores[p] === 0) {
     endDartTurn();
@@ -1303,7 +1338,7 @@ function endDartTurn() {
   const total = state.dart.currentTurn.reduce((s, x) => s + x.v, 0);
   state.dart.turns.push({ player: p, darts: [...state.dart.currentTurn], total });
   state.dart.currentTurn = [];
-  state.dart.turn = 1 - p;
+  state.dart.turn = (p + 1) % state.dart.playerCount;
   state.dart.turnStart = state.dart.scores[state.dart.turn];
 }
 
@@ -1340,6 +1375,7 @@ function attachSwipe(el, idx) {
     const dy = t.clientY - sy, dx = t.clientX - sx;
     const ady = Math.abs(dy), adx = Math.abs(dx);
     sy = null;
+    if (state.mode === 'darts') { openDartFor(idx); return; }
     if (ady < T && adx < T) { addPoint(idx, +1); return; }
     if (adx > ady) return;
     addPoint(idx, dy < 0 ? +1 : -1);
@@ -1355,6 +1391,7 @@ function attachSwipe(el, idx) {
     if (Date.now() - lastTouchAt < 600) return;
     if (msy === null) return;
     const dy = e.clientY - msy; msy = null;
+    if (state.mode === 'darts') { openDartFor(idx); return; }
     if (Math.abs(dy) < T) { addPoint(idx, +1); return; }
     addPoint(idx, dy < 0 ? +1 : -1);
   });
