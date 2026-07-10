@@ -407,6 +407,40 @@
   .round-actions .cancel { background: #475569; color: #fff; }
   .round-actions .cancel:active { background: #334155; }
   .round-hint { font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.75rem; }
+  /* Darts */
+  .dart-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; margin: 0.4rem 0 0.75rem; }
+  .dart-num-btn {
+    padding: 0.65rem 0; border-radius: 0.5rem; border: 1px solid #334155;
+    background: #0f172a; color: #fff; font-size: 1rem; font-weight: 700;
+    cursor: pointer; touch-action: manipulation;
+  }
+  .dart-num-btn:active { background: #334155; }
+  .dart-num-btn.bull { grid-column: span 2; background: #b91c1c; }
+  .dart-num-btn.miss { grid-column: span 3; background: #64748b; }
+  .dart-mult-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+  .dart-mult-btn {
+    padding: 1rem 0.3rem; border-radius: 0.75rem; border: none;
+    color: #fff; cursor: pointer; text-align: center; touch-action: manipulation;
+  }
+  .dart-mult-btn:disabled { opacity: 0.25; }
+  .dart-mult-btn:active { filter: brightness(0.85); }
+  .dart-mult-btn.single { background: #1e40af; }
+  .dart-mult-btn.double { background: #d97706; }
+  .dart-mult-btn.triple { background: #b91c1c; }
+  .dart-mult-btn .mult-label { font-size: 0.7rem; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.05em; }
+  .dart-mult-btn .mult-value { font-size: 1.6rem; font-weight: 800; margin-top: 0.15rem; font-variant-numeric: tabular-nums; }
+  .dart-throw-line { font-size: 0.72rem; color: rgba(255,255,255,0.85); text-align: center; line-height: 1.15; margin-top: 0.2rem; }
+  .dart-actions { display: flex; gap: 0.4rem; align-items: stretch; flex-shrink: 0; flex-wrap: wrap; }
+  .dart-throw-btn {
+    flex: 1 1 100%; background: #059669; color: #fff; border: none;
+    padding: 0.75rem; border-radius: 0.5rem; font-weight: 700; font-size: 0.95rem; cursor: pointer;
+  }
+  .dart-throw-btn:active { background: #047857; }
+  .dart-end-btn {
+    flex: 1; background: #334155; color: #cbd5e1; border: none;
+    padding: 0.5rem; border-radius: 0.5rem; font-size: 0.8rem; cursor: pointer;
+  }
+  .dart-end-btn:active { background: #475569; }
   .round-error {
     display: none;
     background: rgba(239,68,68,0.15);
@@ -454,15 +488,58 @@
       <option value="pingpong">Ping Pong</option>
       <option value="general">General</option>
       <option value="spades">Spades</option>
+      <option value="darts">Darts</option>
     </select>
     <select class="ctl" id="opt" onchange="setOpt(this.value)"></select>
     <button class="ctl" onclick="openRound()" id="roundBtn" style="display:none">Round</button>
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v2.3.1</div>
+  <div class="credit">@marcomalandro · v2.4</div>
 
   <div class="heard" id="heard"></div>
+
+  <div class="modal" id="dartModal">
+    <div class="modal-card">
+      <div id="dmStep1">
+        <div class="step-banner" style="background: linear-gradient(135deg, #1d4ed8, #1e3a8a)">
+          <span class="step-num">Step 1 of 2</span>
+          <span>🎯 Where did it land?</span>
+        </div>
+        <div class="modal-body">
+          <div class="dart-grid" id="dartNumGrid"></div>
+          <div class="round-actions">
+            <button class="cancel" onclick="closeDart()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div id="dmStep2" style="display:none">
+        <div class="step-banner" style="background: linear-gradient(135deg, #059669, #047857)">
+          <span class="step-num">Step 2 of 2</span>
+          <span id="dmMultTitle">Multiplier</span>
+        </div>
+        <div class="modal-body">
+          <div class="dart-mult-grid">
+            <button type="button" class="dart-mult-btn single" onclick="applyDart(1)">
+              <div class="mult-label">Single</div>
+              <div class="mult-value" id="dmVSingle">—</div>
+            </button>
+            <button type="button" class="dart-mult-btn double" onclick="applyDart(2)">
+              <div class="mult-label">Double</div>
+              <div class="mult-value" id="dmVDouble">—</div>
+            </button>
+            <button type="button" class="dart-mult-btn triple" id="dmTripleBtn" onclick="applyDart(3)">
+              <div class="mult-label">Triple</div>
+              <div class="mult-value" id="dmVTriple">—</div>
+            </button>
+          </div>
+          <div class="round-actions">
+            <button class="cancel" onclick="dartStepBack()">← Back</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="modal" id="roundModal">
     <div class="modal-card">
@@ -543,6 +620,7 @@
         <li><strong>Ping Pong</strong> — 2 players, first to N (11/15/21) with a 2-point lead wins, serve alternates.</li>
         <li><strong>General</strong> — 2–6 players, free-form scoring. Optional celebrate target.</li>
         <li><strong>Spades</strong> — 2 teams, tap <em>+ Round</em> to enter books called then books made; standard scoring with overs (−100 per 10 overs). Race to 500.</li>
+        <li><strong>Darts</strong> — 2 players, start at 301/501/701 and count down to zero. Tap <em>🎯 Enter dart</em> to pick the number, then Single / Double / Triple. Bust reverts the turn.</li>
       </ul>
       <h3>Scoring input</h3>
       <ul>
@@ -572,6 +650,7 @@ const state = {
   pp: { scores: [0,0], games: [0,0], server: 0, target: 11, celebrated: false, names: [...DEFAULT_PP_NAMES] },
   gen: { scores: [0,0,0,0,0,0], count: 2, target: 0, celebrated: false, names: [...DEFAULT_GEN_NAMES] },
   sp: { scores: [0,0], bags: [0,0], target: 500, celebrated: false, names: [...DEFAULT_SP_NAMES], rounds: [], pending: null },
+  dart: { start: 501, scores: [501,501], turnStart: 501, turn: 0, currentTurn: [], turns: [], celebrated: false, names: ['Blue','Red'] },
   history: [],
 };
 
@@ -583,13 +662,14 @@ const modeSel = document.getElementById('mode');
 
 // ---------- Snapshots / Undo ----------
 function snapshot() {
-  state.history.push(JSON.parse(JSON.stringify({ pp: state.pp, gen: state.gen, sp: state.sp })));
+  state.history.push(JSON.parse(JSON.stringify({ pp: state.pp, gen: state.gen, sp: state.sp, dart: state.dart })));
   if (state.history.length > 100) state.history.shift();
 }
 function undo() {
   if (state.history.length === 0) return;
   const prev = state.history.pop();
   state.pp = prev.pp; state.gen = prev.gen; state.sp = prev.sp;
+  if (prev.dart) state.dart = prev.dart;
   render(); saveState();
 }
 
@@ -702,6 +782,10 @@ function resetMatch() {
   if (m === 'pingpong') Object.assign(state.pp, { scores: [0,0], games: [0,0], server: 0, celebrated: false });
   if (m === 'general') state.gen.scores = new Array(6).fill(0), state.gen.celebrated = false;
   if (m === 'spades') Object.assign(state.sp, { scores: [0,0], bags: [0,0], celebrated: false, rounds: [], pending: null });
+  if (m === 'darts') {
+    const s = state.dart.start;
+    Object.assign(state.dart, { scores: [s, s], turnStart: s, turn: 0, currentTurn: [], turns: [], celebrated: false });
+  }
   state.history = [];
   render(); saveState();
 }
@@ -716,6 +800,10 @@ function newGame(userInit) {
   } else if (m === 'spades') {
     if (userInit && !state.sp.celebrated && !confirm('Start next game? Current scores reset.')) return;
     state.sp.scores = [0,0]; state.sp.bags = [0,0]; state.sp.celebrated = false; state.sp.rounds = []; state.sp.pending = null;
+  } else if (m === 'darts') {
+    if (userInit && !state.dart.celebrated && !confirm('Start next game? Current scores reset.')) return;
+    const s = state.dart.start;
+    Object.assign(state.dart, { scores: [s, s], turnStart: s, turn: 0, currentTurn: [], turns: [], celebrated: false });
   }
   state.history = [];
   render(); saveState();
@@ -844,6 +932,9 @@ function populateOpt() {
   } else if (state.mode === 'spades') {
     for (const v of [250, 500, 750, 1000]) optSel.add(new Option('to ' + v, v));
     optSel.value = state.sp.target;
+  } else if (state.mode === 'darts') {
+    for (const v of [301, 501, 701]) optSel.add(new Option('from ' + v, v));
+    optSel.value = state.dart.start;
   }
 }
 function setOpt(v) {
@@ -851,6 +942,15 @@ function setOpt(v) {
   if (state.mode === 'pingpong') state.pp.target = n;
   else if (state.mode === 'general') state.gen.count = n;
   else if (state.mode === 'spades') state.sp.target = n;
+  else if (state.mode === 'darts') {
+    if (state.dart.turns.length === 0 && state.dart.currentTurn.length === 0) {
+      state.dart.start = n;
+      state.dart.scores = [n, n];
+      state.dart.turnStart = n;
+    } else {
+      state.dart.start = n; // will apply next game
+    }
+  }
   render(); saveState();
 }
 
@@ -858,13 +958,13 @@ function setOpt(v) {
 function render() {
   modeSel.value = state.mode;
   const m = state.mode;
-  // Spades has its own dedicated Round button in the body, so hide the controls one
   roundBtn.style.display = 'none';
   nextBtn.style.display = (m === 'spades' || (m === 'general' && state.gen.target === 0)) ? 'none' : '';
-  if (m !== 'spades') { board.className = 'players'; }
+  if (m !== 'spades' && m !== 'darts') { board.className = 'players'; }
   if (m === 'pingpong') renderPP();
   else if (m === 'general') renderGen();
   else if (m === 'spades') renderSpades();
+  else if (m === 'darts') renderDarts();
 }
 
 function makeCard(idx, color, name, score, metaHtml, extraClass) {
@@ -1042,6 +1142,140 @@ function renderSpades() {
 
   bindNameInputs();
 }
+function renderDarts() {
+  board.className = 'players';
+  board.dataset.count = 2;
+  board.innerHTML = '';
+  const d = state.dart;
+  const winner = (d.scores[0] === 0) ? 0 : (d.scores[1] === 0) ? 1 : -1;
+  for (let i = 0; i < 2; i++) {
+    let metaHtml;
+    if (i === d.turn && winner === -1) {
+      const parts = d.currentTurn.map(x => x.v);
+      const total = parts.reduce((s, v) => s + v, 0);
+      const partsStr = parts.length ? parts.join(' + ') + (parts.length > 1 ? ' = ' + total : '') : '—';
+      metaHtml = `<div>Turn ${d.currentTurn.length}/3</div><div class="dart-throw-line">${partsStr}</div>`;
+    } else {
+      const last = d.turns.filter(x => x.player === i && !x.bust).slice(-1)[0];
+      metaHtml = last ? `Last turn: <strong>${last.total}</strong>` : `From <strong>${d.start}</strong>`;
+    }
+    const card = makeCard(i, COLORS[i], d.names[i], d.scores[i], metaHtml);
+    if (i === d.turn && winner === -1) card.classList.add('serving');
+    if (i === winner) card.classList.add('winner');
+    board.appendChild(card);
+  }
+  // action bar
+  const actions = document.createElement('div');
+  actions.className = 'dart-actions';
+  actions.style.cssText = 'display:flex;gap:0.4rem;flex-wrap:wrap;flex-shrink:0;grid-column:1/-1';
+  if (winner === -1) {
+    const throwBtn = document.createElement('button');
+    throwBtn.className = 'dart-throw-btn';
+    throwBtn.textContent = `🎯 ${d.names[d.turn]} — Enter dart`;
+    throwBtn.onclick = openDartModal;
+    actions.appendChild(throwBtn);
+    if (d.currentTurn.length > 0) {
+      const endBtn = document.createElement('button');
+      endBtn.className = 'dart-end-btn';
+      endBtn.textContent = 'End turn';
+      endBtn.onclick = () => { snapshot(); endDartTurn(); render(); saveState(); };
+      actions.appendChild(endBtn);
+      const switchBtn = document.createElement('button');
+      switchBtn.className = 'dart-end-btn';
+      switchBtn.textContent = 'Switch player';
+      switchBtn.onclick = () => { snapshot(); state.dart.turn = 1 - d.turn; state.dart.currentTurn = []; state.dart.turnStart = state.dart.scores[state.dart.turn]; render(); saveState(); };
+      actions.appendChild(switchBtn);
+    }
+  }
+  board.appendChild(actions);
+  bindNameInputs();
+}
+
+// Dart entry
+let dartPendingNum = null;
+function openDartModal() {
+  populateDartGrid();
+  dartPendingNum = null;
+  document.getElementById('dmStep1').style.display = '';
+  document.getElementById('dmStep2').style.display = 'none';
+  document.getElementById('dartModal').classList.add('show');
+}
+function closeDart() { document.getElementById('dartModal').classList.remove('show'); }
+function dartStepBack() {
+  document.getElementById('dmStep1').style.display = '';
+  document.getElementById('dmStep2').style.display = 'none';
+}
+function populateDartGrid() {
+  const grid = document.getElementById('dartNumGrid');
+  grid.innerHTML = '';
+  for (let i = 1; i <= 20; i++) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'dart-num-btn';
+    b.textContent = i;
+    b.onclick = () => selectDartNumber(i);
+    grid.appendChild(b);
+  }
+  const bull = document.createElement('button');
+  bull.type = 'button';
+  bull.className = 'dart-num-btn bull';
+  bull.textContent = 'Bull (25)';
+  bull.onclick = () => selectDartNumber(25);
+  grid.appendChild(bull);
+  const miss = document.createElement('button');
+  miss.type = 'button';
+  miss.className = 'dart-num-btn miss';
+  miss.textContent = 'Miss (0)';
+  miss.onclick = () => { closeDart(); applyDartValue(0, 0, 0); };
+  grid.appendChild(miss);
+}
+function selectDartNumber(n) {
+  dartPendingNum = n;
+  document.getElementById('dmMultTitle').textContent = (n === 25 ? 'Bull' : 'Number ' + n) + ' — pick multiplier';
+  document.getElementById('dmVSingle').textContent = n;
+  document.getElementById('dmVDouble').textContent = n * 2;
+  document.getElementById('dmVTriple').textContent = n === 25 ? '—' : (n * 3);
+  document.getElementById('dmTripleBtn').disabled = (n === 25);
+  document.getElementById('dmStep1').style.display = 'none';
+  document.getElementById('dmStep2').style.display = '';
+}
+function applyDart(mult) {
+  if (dartPendingNum === null) return;
+  closeDart();
+  applyDartValue(dartPendingNum * mult, dartPendingNum, mult);
+}
+function applyDartValue(value, n, m) {
+  const p = state.dart.turn;
+  snapshot();
+  state.dart.currentTurn.push({ n, m, v: value });
+  state.dart.scores[p] -= value;
+  if (state.dart.scores[p] < 0) {
+    // bust — revert this turn
+    state.dart.scores[p] = state.dart.turnStart;
+    state.dart.turns.push({ player: p, darts: [...state.dart.currentTurn], total: 0, bust: true });
+    state.dart.currentTurn = [];
+    state.dart.turn = 1 - p;
+    state.dart.turnStart = state.dart.scores[state.dart.turn];
+  } else if (state.dart.scores[p] === 0) {
+    endDartTurn();
+    if (!state.dart.celebrated) {
+      state.dart.celebrated = true;
+      celebrate(p, state.dart.names[p]);
+    }
+  } else if (state.dart.currentTurn.length >= 3) {
+    endDartTurn();
+  }
+  render(); saveState();
+}
+function endDartTurn() {
+  const p = state.dart.turn;
+  const total = state.dart.currentTurn.reduce((s, x) => s + x.v, 0);
+  state.dart.turns.push({ player: p, darts: [...state.dart.currentTurn], total });
+  state.dart.currentTurn = [];
+  state.dart.turn = 1 - p;
+  state.dart.turnStart = state.dart.scores[state.dart.turn];
+}
+
 function bindNameInputs() {
   document.querySelectorAll('.name-input').forEach(el => {
     const idx = +el.dataset.nidx;
@@ -1050,6 +1284,7 @@ function bindNameInputs() {
       if (m === 'pingpong') state.pp.names[idx] = el.value;
       else if (m === 'general') state.gen.names[idx] = el.value;
       else if (m === 'spades') state.sp.names[idx] = el.value;
+      else if (m === 'darts') state.dart.names[idx] = el.value;
       saveState();
     });
     el.addEventListener('touchstart', e => e.stopPropagation());
@@ -1097,7 +1332,7 @@ function attachSwipe(el, idx) {
 // ---------- Splash / persistence ----------
 function dismissSplash() { const s = document.getElementById('splash'); if (s) s.style.display = 'none'; }
 function saveState() {
-  try { localStorage.setItem('scoreboard', JSON.stringify({ mode: state.mode, pp: state.pp, gen: state.gen, sp: state.sp })); } catch (e) {}
+  try { localStorage.setItem('scoreboard', JSON.stringify({ mode: state.mode, pp: state.pp, gen: state.gen, sp: state.sp, dart: state.dart })); } catch (e) {}
 }
 function loadState() {
   try {
@@ -1108,6 +1343,7 @@ function loadState() {
     if (s.pp) Object.assign(state.pp, s.pp);
     if (s.gen) Object.assign(state.gen, s.gen);
     if (s.sp) Object.assign(state.sp, s.sp);
+    if (s.dart) Object.assign(state.dart, s.dart);
   } catch (e) {}
 }
 
