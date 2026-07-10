@@ -254,17 +254,47 @@
   .sp-running { color: #fbbf24; font-weight: 600; font-size: 0.85rem; }
   .sp-penalty { display: inline-block; font-size: 0.65rem; color: #f87171; margin-left: 0.25rem; padding: 0.05rem 0.3rem; border: 1px solid #f87171; border-radius: 0.25rem; }
   .sp-empty { text-align: center; color: #475569; padding: 2rem 0.5rem; font-size: 0.85rem; }
+  .sp-actions { display: flex; gap: 0.4rem; align-items: stretch; flex-shrink: 0; flex-wrap: wrap; }
   .sp-addround {
-    flex-shrink: 0;
+    flex: 1 1 100%;
     background: #059669;
     color: #fff;
     border: none;
     padding: 0.75rem;
     border-radius: 0.5rem;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 0.95rem;
+    cursor: pointer;
   }
   .sp-addround:active { background: #047857; }
+  .sp-addround.sp-made { background: #d97706; }
+  .sp-addround.sp-made:active { background: #b45309; }
+  .sp-edit-link {
+    flex: 1;
+    background: #334155;
+    color: #cbd5e1;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .sp-edit-link:active { background: #475569; }
+  .sp-cancel-link { color: #f87171; }
+  .sp-called-pill {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border: 1px solid #fbbf24;
+    background: rgba(0,0,0,0.35);
+    color: #fbbf24;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0.25rem 0;
+  }
+  .sp-called-pill strong { font-size: 0.9rem; color: #fbbf24; margin-left: 0.2rem; }
   /* Spades round modal */
   .modal { position: fixed; inset: 0; background: rgba(15,23,42,0.9); z-index: 150; display: none; align-items: center; justify-content: center; padding: 1rem; }
   .modal.show { display: flex; }
@@ -413,7 +443,7 @@
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v2.1.4</div>
+  <div class="credit">@marcomalandro · v2.2</div>
 
   <div class="heard" id="heard"></div>
 
@@ -447,7 +477,7 @@
           <div class="round-error" id="rmErr1"></div>
           <div class="round-actions">
             <button class="cancel" onclick="closeRound()">Cancel</button>
-            <button class="apply" onclick="stepToMade()">Next →</button>
+            <button class="apply" onclick="saveBids()">Save Bids</button>
           </div>
         </div>
       </div>
@@ -480,7 +510,7 @@
           <div class="round-hint">How many did each team actually make? (Must total 13)</div>
           <div class="round-error" id="rmErr2"></div>
           <div class="round-actions">
-            <button class="cancel" onclick="stepToBids()">← Back</button>
+            <button class="cancel" onclick="closeRound()">Cancel</button>
             <button class="apply" onclick="applyRound()">Apply</button>
           </div>
         </div>
@@ -524,7 +554,7 @@ const state = {
   mode: 'pingpong',
   pp: { scores: [0,0], games: [0,0], server: 0, target: 11, celebrated: false, names: [...DEFAULT_PP_NAMES] },
   gen: { scores: [0,0,0,0,0,0], count: 2, target: 0, celebrated: false, names: [...DEFAULT_GEN_NAMES] },
-  sp: { scores: [0,0], bags: [0,0], target: 500, celebrated: false, names: [...DEFAULT_SP_NAMES], rounds: [] },
+  sp: { scores: [0,0], bags: [0,0], target: 500, celebrated: false, names: [...DEFAULT_SP_NAMES], rounds: [], pending: null },
   history: [],
 };
 
@@ -654,7 +684,7 @@ function resetMatch() {
   const m = state.mode;
   if (m === 'pingpong') Object.assign(state.pp, { scores: [0,0], games: [0,0], server: 0, celebrated: false });
   if (m === 'general') state.gen.scores = new Array(6).fill(0), state.gen.celebrated = false;
-  if (m === 'spades') Object.assign(state.sp, { scores: [0,0], bags: [0,0], celebrated: false, rounds: [] });
+  if (m === 'spades') Object.assign(state.sp, { scores: [0,0], bags: [0,0], celebrated: false, rounds: [], pending: null });
   state.history = [];
   render(); saveState();
 }
@@ -668,27 +698,54 @@ function newGame(userInit) {
     state.gen.scores = new Array(6).fill(0); state.gen.celebrated = false;
   } else if (m === 'spades') {
     if (userInit && !state.sp.celebrated && !confirm('Start next game? Current scores reset.')) return;
-    state.sp.scores = [0,0]; state.sp.bags = [0,0]; state.sp.celebrated = false; state.sp.rounds = [];
+    state.sp.scores = [0,0]; state.sp.bags = [0,0]; state.sp.celebrated = false; state.sp.rounds = []; state.sp.pending = null;
   }
   state.history = [];
   render(); saveState();
 }
 
 // ---------- Spades round ----------
-function openRound() {
+function openBidsModal() {
   document.getElementById('rt1name').textContent = state.sp.names[0];
   document.getElementById('rt2name').textContent = state.sp.names[1];
-  document.getElementById('rt1name2').textContent = state.sp.names[0];
-  document.getElementById('rt2name2').textContent = state.sp.names[1];
-  for (const id of ['t1bid','t1tricks','t2bid','t2tricks']) document.getElementById(id).value = '';
-  clearRoundError(1); clearRoundError(2);
-  stepToBids();
+  document.getElementById('t1bid').value = state.sp.pending ? state.sp.pending.t1b : '';
+  document.getElementById('t2bid').value = state.sp.pending ? state.sp.pending.t2b : '';
+  clearRoundError(1);
+  document.getElementById('rmStep1').style.display = '';
+  document.getElementById('rmStep2').style.display = 'none';
   document.getElementById('roundModal').classList.add('show');
   setTimeout(() => document.getElementById('t1bid').focus(), 50);
 }
-function stepToBids() {
-  document.getElementById('rmStep1').style.display = '';
-  document.getElementById('rmStep2').style.display = 'none';
+function saveBids() {
+  const t1b = parseInt(document.getElementById('t1bid').value, 10);
+  const t2b = parseInt(document.getElementById('t2bid').value, 10);
+  if ([t1b, t2b].some(v => isNaN(v) || v < 0 || v > 13)) { showRoundError(1, 'Enter values 0–13 for each team.'); return; }
+  if ([t1b, t2b].some(v => v > 0 && v < MIN_BID)) { showRoundError(1, 'Books called must be 0 (nil) or at least ' + MIN_BID + '.'); return; }
+  snapshot();
+  state.sp.pending = { t1b, t2b };
+  closeRound();
+  render(); saveState();
+}
+function openMadeModal() {
+  if (!state.sp.pending) return openBidsModal();
+  document.getElementById('rt1name2').textContent = state.sp.names[0];
+  document.getElementById('rt2name2').textContent = state.sp.names[1];
+  document.getElementById('rmT1Called').textContent = state.sp.pending.t1b;
+  document.getElementById('rmT2Called').textContent = state.sp.pending.t2b;
+  document.getElementById('t1tricks').value = '';
+  document.getElementById('t2tricks').value = '';
+  clearRoundError(2);
+  document.getElementById('rmStep1').style.display = 'none';
+  document.getElementById('rmStep2').style.display = '';
+  document.getElementById('roundModal').classList.add('show');
+  setTimeout(() => document.getElementById('t1tricks').focus(), 50);
+}
+function cancelPendingBids() {
+  if (!state.sp.pending) return;
+  if (!confirm('Discard the called books and start the round over?')) return;
+  snapshot();
+  state.sp.pending = null;
+  render(); saveState();
 }
 function showRoundError(step, msg) {
   const el = document.getElementById('rmErr' + step);
@@ -701,18 +758,6 @@ function showRoundError(step, msg) {
 function clearRoundError(step) {
   const el = document.getElementById('rmErr' + step);
   if (el) el.classList.remove('show');
-}
-function stepToMade() {
-  const t1b = parseInt(document.getElementById('t1bid').value, 10);
-  const t2b = parseInt(document.getElementById('t2bid').value, 10);
-  if ([t1b, t2b].some(v => isNaN(v) || v < 0 || v > 13)) { showRoundError(1, 'Enter values 0–13 for each team.'); return; }
-  if ([t1b, t2b].some(v => v > 0 && v < MIN_BID)) { showRoundError(1, 'Books called must be 0 (nil) or at least ' + MIN_BID + '.'); return; }
-  clearRoundError(1);
-  document.getElementById('rmT1Called').textContent = t1b;
-  document.getElementById('rmT2Called').textContent = t2b;
-  document.getElementById('rmStep1').style.display = 'none';
-  document.getElementById('rmStep2').style.display = '';
-  setTimeout(() => document.getElementById('t1tricks').focus(), 50);
 }
 function closeRound() { document.getElementById('roundModal').classList.remove('show'); }
 const MIN_BID = 4;
@@ -727,11 +772,12 @@ function bump(id, delta) {
   el.value = next;
 }
 function applyRound() {
-  const t1b = parseInt(document.getElementById('t1bid').value, 10);
+  if (!state.sp.pending) { showRoundError(2, 'No called bids on file.'); return; }
+  const t1b = state.sp.pending.t1b;
+  const t2b = state.sp.pending.t2b;
   const t1t = parseInt(document.getElementById('t1tricks').value, 10);
-  const t2b = parseInt(document.getElementById('t2bid').value, 10);
   const t2t = parseInt(document.getElementById('t2tricks').value, 10);
-  if ([t1b,t1t,t2b,t2t].some(v => isNaN(v) || v < 0 || v > 13)) { showRoundError(2, 'Enter values 0–13 for each team.'); return; }
+  if ([t1t, t2t].some(v => isNaN(v) || v < 0 || v > 13)) { showRoundError(2, 'Enter values 0–13 for each team.'); return; }
   if (t1t + t2t !== 13) { showRoundError(2, 'Books made must total 13 (got ' + (t1t + t2t) + ').'); return; }
   clearRoundError(2);
   const [s1, b1] = scoreSpadesTeam(t1b, t1t);
@@ -743,6 +789,7 @@ function applyRound() {
   state.sp.scores[1] += s2;
   state.sp.rounds.push({ t1b, t1t, t2b, t2t, s1, s2, b1, b2, p1, p2,
                         r1: state.sp.scores[0], r2: state.sp.scores[1] });
+  state.sp.pending = null;
   checkSpadesWin();
   closeRound();
   render(); saveState();
@@ -879,8 +926,12 @@ function renderSpades() {
     team.className = 'sp-team' + (i === winner ? ' winner' : '');
     team.dataset.idx = i;
     team.style.background = COLORS[i];
+    const calledPill = state.sp.pending
+      ? `<div class="sp-called-pill">Called <strong>${i === 0 ? state.sp.pending.t1b : state.sp.pending.t2b}</strong></div>`
+      : '';
     team.innerHTML = `
       <input class="name-input" data-nidx="${i}" value="${escapeHtml(state.sp.names[i])}">
+      ${calledPill}
       <div class="sp-total">${state.sp.scores[i]}</div>
       <div class="sp-bags">Bags: <strong>${state.sp.bags[i]}</strong> · to ${t}</div>
     `;
@@ -927,12 +978,35 @@ function renderSpades() {
   }
   board.appendChild(hist);
 
-  // Add round button
-  const add = document.createElement('button');
-  add.className = 'sp-addround';
-  add.textContent = '+ Round';
-  add.onclick = openRound;
-  board.appendChild(add);
+  // Add-round action
+  const actions = document.createElement('div');
+  actions.className = 'sp-actions';
+  if (state.sp.pending) {
+    const madeBtn = document.createElement('button');
+    madeBtn.className = 'sp-addround sp-made';
+    madeBtn.textContent = '✅ Enter Books Made';
+    madeBtn.onclick = openMadeModal;
+    actions.appendChild(madeBtn);
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'sp-edit-link';
+    editBtn.textContent = 'Edit called';
+    editBtn.onclick = openBidsModal;
+    actions.appendChild(editBtn);
+
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'sp-edit-link sp-cancel-link';
+    clearBtn.textContent = 'Discard';
+    clearBtn.onclick = cancelPendingBids;
+    actions.appendChild(clearBtn);
+  } else {
+    const add = document.createElement('button');
+    add.className = 'sp-addround';
+    add.textContent = '+ Round';
+    add.onclick = openBidsModal;
+    actions.appendChild(add);
+  }
+  board.appendChild(actions);
 
   bindNameInputs();
 }
