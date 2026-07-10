@@ -2,7 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Scoreboard">
+<meta name="theme-color" content="#0f172a">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="manifest" href="manifest.json">
+<title>Scoreboard</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; overflow: hidden; }
@@ -10,7 +20,7 @@
     font-family: -apple-system, system-ui, sans-serif;
     background: #0f172a;
     color: #f1f5f9;
-    padding: 0.4rem;
+    padding: max(0.4rem, env(safe-area-inset-top)) max(0.4rem, env(safe-area-inset-right)) max(0.4rem, env(safe-area-inset-bottom)) max(0.4rem, env(safe-area-inset-left));
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
@@ -21,14 +31,23 @@
   }
   .players {
     display: grid;
-    grid-template-columns: 1fr 1fr;
     gap: 0.4rem;
     flex: 1;
     min-height: 0;
   }
+  .players[data-count="2"] { grid-template-columns: 1fr 1fr; }
+  .players[data-count="3"] { grid-template-columns: repeat(3, 1fr); }
+  .players[data-count="4"] { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+  .players[data-count="5"] { grid-template-columns: repeat(6, 1fr); grid-template-rows: 1fr 1fr; }
+  .players[data-count="5"] > :nth-child(1),
+  .players[data-count="5"] > :nth-child(2),
+  .players[data-count="5"] > :nth-child(3) { grid-column: span 2; }
+  .players[data-count="5"] > :nth-child(4) { grid-column: 2 / span 2; }
+  .players[data-count="5"] > :nth-child(5) { grid-column: 4 / span 2; }
+  .players[data-count="6"] { grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr; }
   .player {
     border-radius: 1rem;
-    padding: 0.75rem 0.5rem;
+    padding: 0.6rem 0.4rem;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -37,30 +56,28 @@
     transition: border-color 0.15s, filter 0.1s;
     position: relative;
     overflow: hidden;
+    min-height: 0;
   }
-  #p0 { background: #1e40af; }
-  #p1 { background: #b91c1c; }
   .player.serving { border-color: #fbbf24; }
   .player.winner { filter: brightness(1.15); box-shadow: 0 0 0 4px #10b981 inset; }
   .player.flash-up { animation: flashUp 0.25s; }
   .player.flash-down { animation: flashDown 0.25s; }
-  @keyframes flashUp { 0% { background-color: #10b981; } }
-  @keyframes flashDown { 0% { background-color: #64748b; } }
+  @keyframes flashUp { 0% { background-color: #10b981 !important; } }
+  @keyframes flashDown { 0% { background-color: #64748b !important; } }
   .name-input {
     background: transparent;
     border: none;
     color: #f1f5f9;
-    font-size: 1rem;
+    font-size: 0.9rem;
     text-align: center;
     width: 100%;
-    padding: 0.2rem;
+    padding: 0.15rem;
     border-bottom: 1px solid rgba(255,255,255,0.25);
     font-weight: 600;
     flex-shrink: 0;
   }
   .name-input:focus { outline: none; border-bottom-color: #fbbf24; }
   .score {
-    font-size: clamp(6rem, 40vmin, 18rem);
     font-weight: 800;
     line-height: 0.9;
     font-variant-numeric: tabular-nums;
@@ -69,43 +86,49 @@
     display: flex;
     align-items: center;
   }
-  .games {
-    font-size: 0.85rem;
+  .players[data-count="2"] .score { font-size: clamp(5rem, 34vmin, 16rem); }
+  .players[data-count="3"] .score { font-size: clamp(3.5rem, 22vmin, 11rem); }
+  .players[data-count="4"] .score { font-size: clamp(3rem, 20vmin, 9rem); }
+  .players[data-count="5"] .score,
+  .players[data-count="6"] .score { font-size: clamp(2.5rem, 16vmin, 7rem); }
+  .meta {
+    font-size: 0.75rem;
     color: rgba(255,255,255,0.85);
     flex-shrink: 0;
+    text-align: center;
+    line-height: 1.2;
   }
-  .games strong { font-size: 1rem; color: #fff; }
+  .meta strong { font-size: 0.9rem; color: #fff; }
   .controls {
     display: flex;
-    gap: 0.4rem;
+    gap: 0.35rem;
     align-items: center;
     flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: center;
   }
-  button.ctl {
-    flex: 1;
+  button.ctl, select.ctl {
     background: #334155;
     color: #f1f5f9;
     border: none;
-    padding: 0.65rem 0.3rem;
+    padding: 0.55rem 0.4rem;
     border-radius: 0.5rem;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     cursor: pointer;
+    flex: 1;
+    min-width: 2.2rem;
   }
   button.ctl:active { background: #475569; }
   button.ctl.danger { background: #7f1d1d; }
-  button.ctl.mic { flex: 0 0 auto; padding: 0.55rem 0.7rem; font-size: 1rem; }
+  button.ctl.mic { flex: 0 0 auto; padding: 0.5rem 0.6rem; font-size: 0.95rem; }
   button.ctl.mic.on { background: #64748b; }
   button.ctl.mic.hearing { background: #f59e0b; }
   button.ctl.mic.armed { background: #059669; animation: pulse 1s infinite; }
   @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.7); } 50% { box-shadow: 0 0 0 10px rgba(16,185,129,0); } }
   select.ctl {
-    flex: 0 0 auto;
     background: #1e293b;
-    color: #f1f5f9;
     border: 1px solid #334155;
-    padding: 0.55rem 0.4rem;
-    border-radius: 0.5rem;
-    font-size: 0.85rem;
+    flex: 0 0 auto;
   }
   .credit {
     text-align: center;
@@ -117,47 +140,43 @@
   }
   /* Splash */
   .splash {
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     background: rgba(15, 23, 42, 0.97);
     z-index: 200;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     padding: 1rem;
     animation: fadeIn 0.3s;
   }
   .splash-card {
-    max-width: 380px;
-    width: 100%;
+    max-width: 400px; width: 100%;
     background: #1e293b;
     border-radius: 1rem;
     padding: 1.25rem;
     color: #f1f5f9;
+    max-height: 90vh;
+    overflow-y: auto;
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
   }
   .splash h2 { font-size: 1.1rem; margin-bottom: 0.75rem; color: #fbbf24; }
-  .splash ul { list-style: none; margin: 0 0 1rem 0; padding: 0; }
-  .splash li { margin: 0.4rem 0; font-size: 0.85rem; line-height: 1.35; color: #cbd5e1; }
+  .splash h3 { font-size: 0.9rem; margin: 0.75rem 0 0.35rem; color: #fbbf24; }
+  .splash ul { list-style: none; margin: 0 0 0.75rem 0; padding: 0; }
+  .splash li { margin: 0.3rem 0; font-size: 0.8rem; line-height: 1.35; color: #cbd5e1; }
   .splash li strong { color: #f1f5f9; }
   .splash li code {
     background: #0f172a; padding: 0.05rem 0.35rem; border-radius: 0.25rem;
-    font-size: 0.8rem; color: #fbbf24;
+    font-size: 0.75rem; color: #fbbf24;
   }
   .splash .gotit {
     width: 100%;
     background: #059669;
-    color: #fff;
-    border: none;
+    color: #fff; border: none;
     padding: 0.75rem;
     border-radius: 0.5rem;
-    font-size: 1rem;
-    font-weight: 600;
+    font-size: 1rem; font-weight: 600;
     cursor: pointer;
   }
   .splash .gotit:active { background: #047857; }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
   /* Celebration */
   .confetti-container {
     position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 100;
@@ -166,9 +185,7 @@
     position: absolute; width: 10px; height: 14px; top: -20px;
     animation: fall linear forwards;
   }
-  @keyframes fall {
-    to { transform: translateY(110vh) rotate(720deg); }
-  }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
   .celebration-banner {
     position: fixed; top: 50%; left: 50%;
     transform: translate(-50%, -50%) scale(0.5);
@@ -182,11 +199,9 @@
   .celebration-banner.show {
     opacity: 1; transform: translate(-50%, -50%) scale(1);
   }
-
   .heard {
     position: fixed;
-    bottom: 4rem;
-    left: 50%;
+    bottom: 4rem; left: 50%;
     transform: translateX(-50%);
     background: rgba(0,0,0,0.85);
     color: #fbbf24;
@@ -198,212 +213,210 @@
     pointer-events: none;
     white-space: nowrap;
     max-width: 90vw;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: hidden; text-overflow: ellipsis;
   }
   .heard.show { opacity: 1; }
-  @media (orientation: landscape) {
-    .score { font-size: clamp(5rem, 32vmin, 14rem); }
-    .name-input { font-size: 0.9rem; }
-    button.ctl { padding: 0.45rem 0.3rem; font-size: 0.8rem; }
-    button.ctl.mic { padding: 0.4rem 0.6rem; font-size: 0.9rem; }
-  }
+  /* Spades round modal */
+  .modal { position: fixed; inset: 0; background: rgba(15,23,42,0.9); z-index: 150; display: none; align-items: center; justify-content: center; padding: 1rem; }
+  .modal.show { display: flex; }
+  .modal-card { background: #1e293b; border-radius: 1rem; padding: 1rem; max-width: 380px; width: 100%; }
+  .modal-card h3 { color: #fbbf24; margin-bottom: 0.75rem; text-align: center; font-size: 1rem; }
+  .round-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
+  .round-label { font-size: 0.75rem; color: #94a3b8; text-align: center; }
+  .round-team { padding: 0.5rem; border-radius: 0.5rem; text-align: center; }
+  .round-team input { width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 0.4rem; border-radius: 0.35rem; font-size: 1.1rem; text-align: center; margin-top: 0.25rem; }
+  .round-team label { font-size: 0.7rem; color: rgba(255,255,255,0.85); }
+  .round-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+  .round-actions button { flex: 1; padding: 0.6rem; border-radius: 0.5rem; border: none; font-size: 0.9rem; font-weight: 600; }
+  .round-actions .apply { background: #059669; color: #fff; }
+  .round-actions .cancel { background: #475569; color: #fff; }
+  .round-hint { font-size: 0.7rem; color: #94a3b8; text-align: center; margin-top: 0.5rem; }
 </style>
 </head>
 <body>
-  <div class="players">
-    <div class="player" id="p0">
-      <input class="name-input" id="name0" value="Blue">
-      <div class="score" id="score0">0</div>
-      <div class="games">Games: <strong id="games0">0</strong></div>
-    </div>
-    <div class="player" id="p1">
-      <input class="name-input" id="name1" value="Red">
-      <div class="score" id="score1">0</div>
-      <div class="games">Games: <strong id="games1">0</strong></div>
-    </div>
-  </div>
+  <div id="board" class="players" data-count="2"></div>
 
   <div class="controls">
     <button class="ctl mic" id="micBtn" onclick="toggleMic()">🎙</button>
-    <button class="ctl" onclick="undo()">↶</button>
-    <button class="ctl" onclick="swapSides()">⇄</button>
-    <button class="ctl" onclick="newGame(true)">Next</button>
-    <select class="ctl" id="target" onchange="saveState(); render()">
-      <option value="11">to 11</option>
-      <option value="15">to 15</option>
-      <option value="21">to 21</option>
+    <button class="ctl" onclick="undo()" title="Undo">↶</button>
+    <button class="ctl" onclick="newGame(true)" title="Next game" id="nextBtn">Next</button>
+    <select class="ctl" id="mode" onchange="setMode(this.value)">
+      <option value="pingpong">Ping Pong</option>
+      <option value="general">General</option>
+      <option value="spades">Spades</option>
     </select>
+    <select class="ctl" id="opt" onchange="setOpt(this.value)"></select>
+    <button class="ctl" onclick="openRound()" id="roundBtn" style="display:none">Round</button>
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v1.7</div>
+  <div class="credit">@marcomalandro · v1.8</div>
 
   <div class="heard" id="heard"></div>
+
+  <div class="modal" id="roundModal">
+    <div class="modal-card">
+      <h3>New Round</h3>
+      <div class="round-row">
+        <div class="round-team" style="background:#1e40af">
+          <label id="rt1name">Team 1</label>
+          <div class="round-label">Bid</div>
+          <input type="number" id="t1bid" min="0" max="13" inputmode="numeric">
+          <div class="round-label">Tricks</div>
+          <input type="number" id="t1tricks" min="0" max="13" inputmode="numeric">
+        </div>
+        <div class="round-label">vs</div>
+        <div class="round-team" style="background:#b91c1c">
+          <label id="rt2name">Team 2</label>
+          <div class="round-label">Bid</div>
+          <input type="number" id="t2bid" min="0" max="13" inputmode="numeric">
+          <div class="round-label">Tricks</div>
+          <input type="number" id="t2tricks" min="0" max="13" inputmode="numeric">
+        </div>
+      </div>
+      <div class="round-hint">Tricks total must equal 13. Bid 0 = nil (±100).</div>
+      <div class="round-actions">
+        <button class="cancel" onclick="closeRound()">Cancel</button>
+        <button class="apply" onclick="applyRound()">Apply</button>
+      </div>
+    </div>
+  </div>
 
   <div class="splash" id="splash">
     <div class="splash-card">
       <h2>Scoreboard</h2>
+      <h3>Modes</h3>
+      <ul>
+        <li><strong>Ping Pong</strong> — 2 players, first to N (11/15/21) with a 2-point lead wins, serve alternates.</li>
+        <li><strong>General</strong> — 2–6 players, free-form scoring. Optional celebrate target.</li>
+        <li><strong>Spades</strong> — 2 teams, tap <em>Round</em> to enter bids &amp; tricks; standard scoring with sandbags. Race to 500.</li>
+      </ul>
+      <h3>Scoring input</h3>
       <ul>
         <li><strong>Tap</strong> a player's card → +1 point</li>
-        <li><strong>Swipe up</strong> on a card → +1 · <strong>swipe down</strong> → −1</li>
-        <li><strong>Voice:</strong> tap 🎙, then every command must include <code>tally</code>: <code>tally blue point</code>, <code>tally another point for red</code>, <code>tally minus red</code>. Wake word required each time to avoid picking up chatter.</li>
-        <li><strong>“to N”</strong> selector = when a player reaches N with a 2-point lead, celebrate. Scores keep going.</li>
-        <li><strong>Undo</strong> reverses last change · <strong>Next</strong> starts a new game · <strong>Reset</strong> clears everything.</li>
-        <li><strong>Voice log:</strong> every recognition is written to <code>Documents/PingPong/pingpong-voice.log</code> (visible in any file manager).</li>
+        <li><strong>Swipe up</strong> → +1 · <strong>swipe down</strong> → −1</li>
+        <li><strong>Voice:</strong> tap 🎙, then say things like <code>blue point</code>, <code>another point for red</code>, <code>player three plus one</code>, <code>team two minus ten</code>.</li>
+      </ul>
+      <h3>Buttons</h3>
+      <ul>
+        <li><strong>↶</strong> undo last change · <strong>Next</strong> new game · <strong>Reset</strong> clear match.</li>
       </ul>
       <button class="gotit" onclick="dismissSplash()">Got it</button>
     </div>
   </div>
 
 <script>
+// ---------- Constants ----------
+const COLORS = ['#1e40af', '#b91c1c', '#059669', '#c2410c', '#7c3aed', '#ca8a04'];
+const COLOR_NAMES = ['blue', 'red', 'green', 'orange', 'purple', 'yellow'];
+const DEFAULT_PP_NAMES = ['Blue', 'Red'];
+const DEFAULT_GEN_NAMES = ['Blue', 'Red', 'Green', 'Orange', 'Purple', 'Yellow'];
+const DEFAULT_SP_NAMES = ['Blue', 'Red'];
+
+// ---------- State ----------
 const state = {
-  scores: [0, 0],
-  games: [0, 0],
-  server: 0,
+  mode: 'pingpong',
+  pp: { scores: [0,0], games: [0,0], server: 0, target: 11, celebrated: false, names: [...DEFAULT_PP_NAMES] },
+  gen: { scores: [0,0,0,0,0,0], count: 2, target: 0, celebrated: false, names: [...DEFAULT_GEN_NAMES] },
+  sp: { scores: [0,0], bags: [0,0], target: 500, celebrated: false, names: [...DEFAULT_SP_NAMES], rounds: [] },
   history: [],
-  celebrated: false,
 };
 
-function target() { return parseInt(document.getElementById('target').value, 10); }
+const board = document.getElementById('board');
+const nextBtn = document.getElementById('nextBtn');
+const roundBtn = document.getElementById('roundBtn');
+const optSel = document.getElementById('opt');
+const modeSel = document.getElementById('mode');
 
-function currentServer() {
-  const [a, b] = state.scores;
-  const t = target();
-  const deuce = a >= t - 1 && b >= t - 1;
-  const totalPoints = a + b;
-  if (deuce) return (state.server + totalPoints) % 2;
-  return (state.server + Math.floor(totalPoints / 2)) % 2;
+// ---------- Snapshots / Undo ----------
+function snapshot() {
+  state.history.push(JSON.parse(JSON.stringify({ pp: state.pp, gen: state.gen, sp: state.sp })));
+  if (state.history.length > 100) state.history.shift();
+}
+function undo() {
+  if (state.history.length === 0) return;
+  const prev = state.history.pop();
+  state.pp = prev.pp; state.gen = prev.gen; state.sp = prev.sp;
+  render(); saveState();
 }
 
-function checkWin() {
-  const [a, b] = state.scores;
-  const t = target();
-  if (a >= t && a - b >= 2) return 0;
-  if (b >= t && b - a >= 2) return 1;
-  return -1;
-}
-
-function addPoint(player, delta) {
-  const next = state.scores[player] + delta;
-  if (next < 0) return;
-  state.history.push({ scores: [...state.scores], games: [...state.games], server: state.server, celebrated: state.celebrated });
-  state.scores[player] = next;
-  if (delta > 0) {
-    const winner = checkWin();
-    if (winner !== -1 && !state.celebrated) {
-      state.games[winner]++;
-      state.celebrated = true;
-      celebrate(winner);
-    }
+// ---------- Mode-agnostic point add ----------
+function addPoint(idx, delta) {
+  const m = state.mode;
+  if (m === 'pingpong') {
+    if (idx > 1) return;
+    const next = state.pp.scores[idx] + delta;
+    if (next < 0) return;
+    snapshot();
+    state.pp.scores[idx] = next;
+    if (delta > 0) checkPPWin();
+    flash(idx, delta > 0 ? 'flash-up' : 'flash-down');
+  } else if (m === 'general') {
+    if (idx >= state.gen.count) return;
+    const next = state.gen.scores[idx] + delta;
+    if (next < 0) return;
+    snapshot();
+    state.gen.scores[idx] = next;
+    if (delta > 0) checkGenWin();
+    flash(idx, delta > 0 ? 'flash-up' : 'flash-down');
+  } else if (m === 'spades') {
+    if (idx > 1) return;
+    snapshot();
+    state.sp.scores[idx] += delta;
+    if (delta > 0) checkSpadesWin();
+    flash(idx, delta > 0 ? 'flash-up' : 'flash-down');
   }
-  flash(player, delta > 0 ? 'flash-up' : 'flash-down');
-  render();
-  saveState();
+  render(); saveState();
 }
 
-function flash(player, cls) {
-  const el = document.getElementById('p' + player);
+function flash(idx, cls) {
+  const el = document.querySelector(`[data-idx="${idx}"]`);
+  if (!el) return;
   el.classList.remove('flash-up', 'flash-down');
   void el.offsetWidth;
   el.classList.add(cls);
 }
 
-function undo() {
-  if (state.history.length === 0) return;
-  const prev = state.history.pop();
-  state.scores = prev.scores;
-  state.games = prev.games;
-  state.server = prev.server;
-  state.celebrated = prev.celebrated;
-  render();
-  saveState();
-}
-
-function resetMatch() {
-  if (!confirm('Reset match? This clears games too.')) return;
-  state.scores = [0, 0];
-  state.games = [0, 0];
-  state.server = 0;
-  state.history = [];
-  state.celebrated = false;
-  render();
-  saveState();
-}
-
-function newGame(userInitiated) {
-  if (userInitiated && !state.celebrated) {
-    if (!confirm('Start next game? Current scores will reset.')) return;
+// ---------- Win / celebration ----------
+function checkPPWin() {
+  const t = state.pp.target;
+  const [a,b] = state.pp.scores;
+  let w = -1;
+  if (a >= t && a - b >= 2) w = 0;
+  else if (b >= t && b - a >= 2) w = 1;
+  if (w !== -1 && !state.pp.celebrated) {
+    state.pp.games[w]++;
+    state.pp.celebrated = true;
+    celebrate(w, state.pp.names[w]);
   }
-  state.scores = [0, 0];
-  state.server = 1 - state.server;
-  state.history = [];
-  state.celebrated = false;
-  render();
-  saveState();
+}
+function checkGenWin() {
+  const t = state.gen.target;
+  if (t <= 0) return;
+  const s = state.gen.scores.slice(0, state.gen.count);
+  const max = Math.max(...s);
+  if (max < t) return;
+  const winner = s.indexOf(max);
+  const second = Math.max(...s.filter((_,i) => i !== winner));
+  if (max - second < 2) return;
+  if (state.gen.celebrated) return;
+  state.gen.celebrated = true;
+  celebrate(winner, state.gen.names[winner]);
+}
+function checkSpadesWin() {
+  const t = state.sp.target;
+  const [a,b] = state.sp.scores;
+  let w = -1;
+  if (a >= t && a > b) w = 0;
+  else if (b >= t && b > a) w = 1;
+  if (w !== -1 && !state.sp.celebrated) {
+    state.sp.celebrated = true;
+    celebrate(w, state.sp.names[w]);
+  }
 }
 
-function swapSides() {
-  state.scores.reverse();
-  state.games.reverse();
-  state.server = 1 - state.server;
-  const n0 = document.getElementById('name0').value;
-  const n1 = document.getElementById('name1').value;
-  document.getElementById('name0').value = n1;
-  document.getElementById('name1').value = n0;
-  render();
-  saveState();
-}
-
-function render() {
-  document.getElementById('score0').textContent = state.scores[0];
-  document.getElementById('score1').textContent = state.scores[1];
-  document.getElementById('games0').textContent = state.games[0];
-  document.getElementById('games1').textContent = state.games[1];
-
-  const server = currentServer();
-  document.getElementById('p0').classList.toggle('serving', server === 0 && !state.celebrated);
-  document.getElementById('p1').classList.toggle('serving', server === 1 && !state.celebrated);
-
-  const winner = checkWin();
-  document.getElementById('p0').classList.toggle('winner', winner === 0);
-  document.getElementById('p1').classList.toggle('winner', winner === 1);
-}
-
-function saveState() {
-  try {
-    localStorage.setItem('pingpong', JSON.stringify({
-      ...state,
-      names: [document.getElementById('name0').value, document.getElementById('name1').value],
-      target: target(),
-    }));
-  } catch (e) {}
-}
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem('pingpong');
-    if (!raw) return;
-    const saved = JSON.parse(raw);
-    Object.assign(state, {
-      scores: saved.scores || [0, 0],
-      games: saved.games || [0, 0],
-      server: saved.server || 0,
-      history: saved.history || [],
-      celebrated: saved.celebrated || false,
-    });
-    if (saved.names) {
-      document.getElementById('name0').value = saved.names[0];
-      document.getElementById('name1').value = saved.names[1];
-    }
-    if (saved.target) document.getElementById('target').value = saved.target;
-  } catch (e) {}
-}
-
-function celebrate(winner) {
+function celebrate(winner, name) {
   if (navigator.vibrate) navigator.vibrate([180, 90, 180, 90, 400]);
-
-  const name = document.getElementById('name' + winner).value || (winner === 0 ? 'Blue' : 'Red');
   const banner = document.createElement('div');
   banner.className = 'celebration-banner';
   banner.textContent = '🏆 ' + name + ' wins!';
@@ -415,13 +428,12 @@ function celebrate(winner) {
   const container = document.createElement('div');
   container.className = 'confetti-container';
   document.body.appendChild(container);
-  const colors = ['#fbbf24', '#10b981', '#3b82f6', '#ef4444', '#a855f7', '#f97316', '#ec4899'];
-  const N = 100;
-  for (let i = 0; i < N; i++) {
+  const pal = ['#fbbf24','#10b981','#3b82f6','#ef4444','#a855f7','#f97316','#ec4899'];
+  for (let i = 0; i < 100; i++) {
     const p = document.createElement('div');
     p.className = 'confetti-piece';
     p.style.left = Math.random() * 100 + '%';
-    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.background = pal[Math.floor(Math.random() * pal.length)];
     p.style.animationDelay = (Math.random() * 1.2) + 's';
     p.style.animationDuration = (2 + Math.random() * 2) + 's';
     if (Math.random() > 0.5) p.style.borderRadius = '50%';
@@ -430,72 +442,285 @@ function celebrate(winner) {
   setTimeout(() => container.remove(), 5000);
 }
 
-function dismissSplash() {
-  const s = document.getElementById('splash');
-  if (s) s.style.display = 'none';
+// ---------- Reset / next ----------
+function resetMatch() {
+  if (!confirm('Reset match?')) return;
+  const m = state.mode;
+  if (m === 'pingpong') Object.assign(state.pp, { scores: [0,0], games: [0,0], server: 0, celebrated: false });
+  if (m === 'general') state.gen.scores = new Array(6).fill(0), state.gen.celebrated = false;
+  if (m === 'spades') Object.assign(state.sp, { scores: [0,0], bags: [0,0], celebrated: false, rounds: [] });
+  state.history = [];
+  render(); saveState();
+}
+function newGame(userInit) {
+  const m = state.mode;
+  if (m === 'pingpong') {
+    if (userInit && !state.pp.celebrated && !confirm('Start next game? Current scores reset.')) return;
+    state.pp.scores = [0,0]; state.pp.server = 1 - state.pp.server; state.pp.celebrated = false;
+  } else if (m === 'general') {
+    if (userInit && !state.gen.celebrated && !confirm('Start next game? Current scores reset.')) return;
+    state.gen.scores = new Array(6).fill(0); state.gen.celebrated = false;
+  } else if (m === 'spades') {
+    if (userInit && !state.sp.celebrated && !confirm('Start next game? Current scores reset.')) return;
+    state.sp.scores = [0,0]; state.sp.bags = [0,0]; state.sp.celebrated = false; state.sp.rounds = [];
+  }
+  state.history = [];
+  render(); saveState();
 }
 
-let lastTouchAt = 0;
-function attachSwipe(playerIdx) {
-  const el = document.getElementById('p' + playerIdx);
-  let startY = null, startX = null;
-  const THRESHOLD = 30;
+// ---------- Spades round ----------
+function openRound() {
+  document.getElementById('rt1name').textContent = state.sp.names[0];
+  document.getElementById('rt2name').textContent = state.sp.names[1];
+  for (const id of ['t1bid','t1tricks','t2bid','t2tricks']) document.getElementById(id).value = '';
+  document.getElementById('roundModal').classList.add('show');
+  setTimeout(() => document.getElementById('t1bid').focus(), 50);
+}
+function closeRound() { document.getElementById('roundModal').classList.remove('show'); }
+function applyRound() {
+  const t1b = parseInt(document.getElementById('t1bid').value, 10);
+  const t1t = parseInt(document.getElementById('t1tricks').value, 10);
+  const t2b = parseInt(document.getElementById('t2bid').value, 10);
+  const t2t = parseInt(document.getElementById('t2tricks').value, 10);
+  if ([t1b,t1t,t2b,t2t].some(v => isNaN(v) || v < 0 || v > 13)) { alert('Enter valid bids and tricks (0–13).'); return; }
+  if (t1t + t2t !== 13) { alert('Tricks must total 13 (got ' + (t1t + t2t) + ').'); return; }
+  const [s1, b1] = scoreSpadesTeam(t1b, t1t);
+  const [s2, b2] = scoreSpadesTeam(t2b, t2t);
+  snapshot();
+  applyBags(0, b1);
+  applyBags(1, b2);
+  state.sp.scores[0] += s1;
+  state.sp.scores[1] += s2;
+  state.sp.rounds.push({ t1b, t1t, t2b, t2t, s1, s2 });
+  checkSpadesWin();
+  closeRound();
+  render(); saveState();
+}
+function scoreSpadesTeam(bid, tricks) {
+  if (bid === 0) return [tricks === 0 ? 100 : -100, 0];
+  if (tricks >= bid) return [10 * bid + (tricks - bid), tricks - bid];
+  return [-10 * bid, 0];
+}
+function applyBags(team, newBags) {
+  state.sp.bags[team] += newBags;
+  while (state.sp.bags[team] >= 10) {
+    state.sp.scores[team] -= 100;
+    state.sp.bags[team] -= 10;
+  }
+}
 
+// ---------- Mode / opt ----------
+function setMode(m) {
+  state.mode = m;
+  populateOpt();
+  render(); saveState();
+}
+function populateOpt() {
+  optSel.innerHTML = '';
+  if (state.mode === 'pingpong') {
+    for (const v of [11, 15, 21]) optSel.add(new Option('to ' + v, v));
+    optSel.value = state.pp.target;
+  } else if (state.mode === 'general') {
+    for (const v of [2,3,4,5,6]) optSel.add(new Option(v + ' players', v));
+    optSel.value = state.gen.count;
+  } else if (state.mode === 'spades') {
+    for (const v of [250, 500, 750, 1000]) optSel.add(new Option('to ' + v, v));
+    optSel.value = state.sp.target;
+  }
+}
+function setOpt(v) {
+  const n = parseInt(v, 10);
+  if (state.mode === 'pingpong') state.pp.target = n;
+  else if (state.mode === 'general') state.gen.count = n;
+  else if (state.mode === 'spades') state.sp.target = n;
+  render(); saveState();
+}
+
+// ---------- Render ----------
+function render() {
+  modeSel.value = state.mode;
+  const m = state.mode;
+  roundBtn.style.display = (m === 'spades') ? '' : 'none';
+  nextBtn.style.display = (m === 'general' && state.gen.target === 0) ? 'none' : '';
+  if (m === 'pingpong') renderPP();
+  else if (m === 'general') renderGen();
+  else if (m === 'spades') renderSpades();
+}
+
+function makeCard(idx, color, name, score, metaHtml, extraClass) {
+  const el = document.createElement('div');
+  el.className = 'player ' + (extraClass || '');
+  el.dataset.idx = idx;
+  el.style.background = color;
+  el.innerHTML = `
+    <input class="name-input" data-nidx="${idx}" value="${escapeHtml(name)}">
+    <div class="score">${score}</div>
+    <div class="meta">${metaHtml || '&nbsp;'}</div>
+  `;
+  attachSwipe(el, idx);
+  return el;
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function currentServer() {
+  const [a,b] = state.pp.scores;
+  const t = state.pp.target;
+  const total = a + b;
+  const deuce = a >= t - 1 && b >= t - 1;
+  if (deuce) return (state.pp.server + total) % 2;
+  return (state.pp.server + Math.floor(total / 2)) % 2;
+}
+
+function renderPP() {
+  board.dataset.count = 2;
+  board.innerHTML = '';
+  const server = currentServer();
+  const [a,b] = state.pp.scores;
+  const t = state.pp.target;
+  const winner = (a >= t && a - b >= 2) ? 0 : (b >= t && b - a >= 2) ? 1 : -1;
+  for (let i = 0; i < 2; i++) {
+    const card = makeCard(i, COLORS[i], state.pp.names[i], state.pp.scores[i], `Games: <strong>${state.pp.games[i]}</strong>`);
+    if (i === server) card.classList.add('serving');
+    if (i === winner) card.classList.add('winner');
+    board.appendChild(card);
+  }
+  bindNameInputs();
+}
+function renderGen() {
+  const n = state.gen.count;
+  board.dataset.count = n;
+  board.innerHTML = '';
+  const t = state.gen.target;
+  const winner = (t > 0) ? (() => {
+    const s = state.gen.scores.slice(0, n);
+    const max = Math.max(...s);
+    if (max < t) return -1;
+    const w = s.indexOf(max);
+    const rest = s.filter((_, i) => i !== w);
+    return rest.length && (max - Math.max(...rest)) >= 2 ? w : -1;
+  })() : -1;
+  for (let i = 0; i < n; i++) {
+    const card = makeCard(i, COLORS[i], state.gen.names[i], state.gen.scores[i], t > 0 ? `to <strong>${t}</strong>` : '');
+    if (i === winner) card.classList.add('winner');
+    board.appendChild(card);
+  }
+  bindNameInputs();
+}
+function renderSpades() {
+  board.dataset.count = 2;
+  board.innerHTML = '';
+  const t = state.sp.target;
+  const [a,b] = state.sp.scores;
+  const winner = (a >= t && a > b) ? 0 : (b >= t && b > a) ? 1 : -1;
+  for (let i = 0; i < 2; i++) {
+    const meta = `Bags: <strong>${state.sp.bags[i]}</strong> · to ${t}`;
+    const card = makeCard(i, COLORS[i], state.sp.names[i], state.sp.scores[i], meta);
+    if (i === winner) card.classList.add('winner');
+    board.appendChild(card);
+  }
+  bindNameInputs();
+}
+function bindNameInputs() {
+  document.querySelectorAll('.name-input').forEach(el => {
+    const idx = +el.dataset.nidx;
+    el.addEventListener('input', () => {
+      const m = state.mode;
+      if (m === 'pingpong') state.pp.names[idx] = el.value;
+      else if (m === 'general') state.gen.names[idx] = el.value;
+      else if (m === 'spades') state.sp.names[idx] = el.value;
+      saveState();
+    });
+    el.addEventListener('touchstart', e => e.stopPropagation());
+    el.addEventListener('mousedown', e => e.stopPropagation());
+  });
+}
+
+// ---------- Touch / swipe ----------
+let lastTouchAt = 0;
+function attachSwipe(el, idx) {
+  let sy = null, sx = null;
+  const T = 30;
   el.addEventListener('touchstart', (e) => {
     if (e.target.classList.contains('name-input')) return;
     const t = e.touches[0];
-    startY = t.clientY;
-    startX = t.clientX;
+    sy = t.clientY; sx = t.clientX;
   }, { passive: true });
-
   el.addEventListener('touchend', (e) => {
-    if (startY === null) return;
+    if (sy === null) return;
     lastTouchAt = Date.now();
     const t = e.changedTouches[0];
-    const dy = t.clientY - startY;
-    const dx = t.clientX - startX;
-    const absDy = Math.abs(dy), absDx = Math.abs(dx);
-    startY = null;
-    if (absDy < THRESHOLD && absDx < THRESHOLD) { addPoint(playerIdx, +1); return; }
-    if (absDx > absDy) return;
-    addPoint(playerIdx, dy < 0 ? +1 : -1);
+    const dy = t.clientY - sy, dx = t.clientX - sx;
+    const ady = Math.abs(dy), adx = Math.abs(dx);
+    sy = null;
+    if (ady < T && adx < T) { addPoint(idx, +1); return; }
+    if (adx > ady) return;
+    addPoint(idx, dy < 0 ? +1 : -1);
   }, { passive: true });
 
-  // Desktop/browser mouse fallback, suppressed if a touch just fired
-  let mouseStartY = null;
+  let msy = null;
   el.addEventListener('mousedown', (e) => {
     if (Date.now() - lastTouchAt < 600) return;
     if (e.target.classList.contains('name-input')) return;
-    mouseStartY = e.clientY;
+    msy = e.clientY;
   });
   el.addEventListener('mouseup', (e) => {
     if (Date.now() - lastTouchAt < 600) return;
-    if (mouseStartY === null) return;
-    const dy = e.clientY - mouseStartY;
-    mouseStartY = null;
-    if (Math.abs(dy) < THRESHOLD) { addPoint(playerIdx, +1); return; }
-    addPoint(playerIdx, dy < 0 ? +1 : -1);
+    if (msy === null) return;
+    const dy = e.clientY - msy; msy = null;
+    if (Math.abs(dy) < T) { addPoint(idx, +1); return; }
+    addPoint(idx, dy < 0 ? +1 : -1);
   });
 }
 
-document.getElementById('name0').addEventListener('input', saveState);
-document.getElementById('name1').addEventListener('input', saveState);
-document.querySelectorAll('.name-input').forEach(el => {
-  el.addEventListener('touchstart', e => e.stopPropagation());
-  el.addEventListener('mousedown', e => e.stopPropagation());
-});
+// ---------- Splash / persistence ----------
+function dismissSplash() { const s = document.getElementById('splash'); if (s) s.style.display = 'none'; }
+function saveState() {
+  try { localStorage.setItem('scoreboard', JSON.stringify({ mode: state.mode, pp: state.pp, gen: state.gen, sp: state.sp })); } catch (e) {}
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem('scoreboard');
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (s.mode) state.mode = s.mode;
+    if (s.pp) Object.assign(state.pp, s.pp);
+    if (s.gen) Object.assign(state.gen, s.gen);
+    if (s.sp) Object.assign(state.sp, s.sp);
+  } catch (e) {}
+}
 
-attachSwipe(0);
-attachSwipe(1);
+// ---------- Voice ----------
+const Speech = (() => {
+  if (window.AndroidSpeech) return { available: () => AndroidSpeech.isAvailable(), start: () => AndroidSpeech.start(), stop: () => AndroidSpeech.stop() };
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return { available: () => false, start: () => {}, stop: () => {} };
+  let rec = null, listening = false;
+  function build() {
+    rec = new SR();
+    rec.continuous = false; rec.interimResults = false;
+    rec.maxAlternatives = 3; rec.lang = 'en-US';
+    rec.onstart = () => onSpeechState('listening');
+    rec.onspeechstart = () => onSpeechState('hearing');
+    rec.onend = () => { onSpeechState('idle'); if (listening) try { rec.start(); } catch (e) {} };
+    rec.onerror = (e) => { onSpeechState('idle'); if (e.error === 'not-allowed') listening = false; };
+    rec.onresult = (e) => {
+      const alts = [];
+      const last = e.results[e.results.length - 1];
+      for (let i = 0; i < last.length; i++) alts.push(last[i].transcript);
+      onSpeechResults(alts);
+    };
+  }
+  return {
+    available: () => true,
+    start: () => { if (!rec) build(); listening = true; try { rec.start(); } catch (e) {} },
+    stop:  () => { listening = false; if (rec) try { rec.stop(); } catch (e) {} },
+  };
+})();
 
-// ---------- Voice recognition ----------
-// Wake word must appear in every command utterance. Prevents ambient chatter from scoring.
-const WAKE_RE = /\b(tally|tallies|tallied|tallie|hey tally)\b/;
 let micOn = false;
 const micBtn = document.getElementById('micBtn');
 const heardEl = document.getElementById('heard');
 let heardTimer = null;
-
 function showHeard(text, color) {
   heardEl.textContent = text;
   heardEl.style.color = color || '#fbbf24';
@@ -503,103 +728,108 @@ function showHeard(text, color) {
   clearTimeout(heardTimer);
   heardTimer = setTimeout(() => heardEl.classList.remove('show'), 2200);
 }
-
 function toggleMic() {
-  if (!window.AndroidSpeech) { showHeard('Voice not available in browser'); return; }
-  if (!AndroidSpeech.isAvailable()) { showHeard('Speech recognition not available'); return; }
+  if (!Speech.available()) { showHeard('Voice not available'); return; }
   micOn = !micOn;
-  if (micOn) {
-    AndroidSpeech.start();
-    micBtn.classList.add('on');
-    showHeard('Say "tally <command>"', '#94a3b8');
-    voiceLog({ event: 'mic_on' });
-  } else {
-    AndroidSpeech.stop();
-    micBtn.classList.remove('on', 'hearing', 'armed');
-    voiceLog({ event: 'mic_off' });
-  }
+  if (micOn) { Speech.start(); micBtn.classList.add('on'); showHeard('Listening…', '#94a3b8'); }
+  else { Speech.stop(); micBtn.classList.remove('on','hearing','armed'); }
 }
-
-window.onSpeechState = function(state) {
+window.onSpeechState = function(s) {
   if (!micOn) return;
   micBtn.classList.remove('hearing');
-  if (state === 'hearing') micBtn.classList.add('hearing');
+  if (s === 'hearing') micBtn.classList.add('hearing');
 };
 
-function processCommand(text) {
+// number words → integer
+const NUM = { zero:0, one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10, eleven:11, twelve:12, thirteen:13, fourteen:14, fifteen:15, twenty:20, thirty:30, forty:40, fifty:50, sixty:60, seventy:70, eighty:80, ninety:90, hundred:100 };
+function parseNumber(text) {
   const t = text.toLowerCase();
-  const hasSub = /(subtract|minus|remove|take away|less|deduct|drop|reduce|down|negative|neg\b)/.test(t);
-  const hasAdd = /(point|score|another|plus|add|one|\b1\b|won|up|goal|gain)/.test(t);
-  const isBlue = /\b(blue|blues)\b/.test(t);
-  const isRed = /\b(red|reds)\b/.test(t);
-
-  if (isBlue === isRed) return false;
-  if (!hasAdd && !hasSub) return false;
-
-  addPoint(isBlue ? 0 : 1, hasSub ? -1 : +1);
-  return true;
+  // multi-digit numeral wins
+  const digitMatch = t.match(/-?\d+/);
+  if (digitMatch) return parseInt(digitMatch[0], 10);
+  // word phrases: "one hundred", "fifty", etc.
+  const words = t.split(/\s+/);
+  let total = 0, cur = 0, found = false;
+  for (const w of words) {
+    if (w in NUM) {
+      found = true;
+      if (w === 'hundred') cur = (cur || 1) * 100;
+      else cur += NUM[w];
+    }
+  }
+  return found ? total + cur : null;
 }
 
-// Try all recognition alternatives; require wake word in same utterance
-function tryAlternatives(alternatives) {
-  const withWake = alternatives.filter(a => WAKE_RE.test(a.toLowerCase()));
-  if (withWake.length === 0) return false;
-  for (const alt of withWake) {
-    const cleaned = alt.toLowerCase().replace(WAKE_RE, ' ').replace(/\s+/g, ' ').trim();
-    if (processCommand(cleaned)) {
-      micBtn.classList.add('armed');
-      setTimeout(() => micBtn.classList.remove('armed'), 400);
-      return true;
-    }
+const SUB_RE = /(subtract|minus|remove|take away|less|deduct|drop|reduce|down|negative|neg\b|undo|back)/;
+const ADD_RE = /(point|score|another|plus|add|one|\b1\b|won|up|goal|gain|got)/;
+
+function parseCommand(text) {
+  const t = text.toLowerCase();
+  const sub = SUB_RE.test(t);
+  const add = ADD_RE.test(t) || /\b\d+\b/.test(t);
+  if (!add && !sub) return null;
+
+  let target = null; // player index
+  let team = null;
+
+  // "team one/two"
+  const teamM = t.match(/\bteam\s+(\w+)\b/);
+  if (teamM) { const n = parseNumber(teamM[1]); if (n === 1 || n === 2) team = n - 1; }
+
+  // "player one".."player six"
+  const plM = t.match(/\bplayer\s+(\w+)\b/);
+  if (plM) { const n = parseNumber(plM[1]); if (n >= 1 && n <= 6) target = n - 1; }
+
+  // Color mention: blue/red/…
+  const colorIdx = COLOR_NAMES.findIndex(c => new RegExp('\\b' + c + 's?\\b').test(t));
+
+  // How much to change by
+  let amount = 1;
+  const numM = t.replace(/\bone\b/, '1').match(/-?\d+/);
+  if (numM) amount = Math.abs(parseInt(numM[0], 10));
+
+  // Mode-specific resolution
+  if (state.mode === 'pingpong') {
+    if (colorIdx === 0 || colorIdx === 1) target = colorIdx;
+    if (target === null || target > 1) return null;
+    return { idx: target, delta: (sub ? -1 : +1) * amount };
+  }
+  if (state.mode === 'general') {
+    if (target === null && colorIdx >= 0 && colorIdx < state.gen.count) target = colorIdx;
+    if (target === null || target >= state.gen.count) return null;
+    return { idx: target, delta: (sub ? -1 : +1) * amount };
+  }
+  if (state.mode === 'spades') {
+    if (team === null && (colorIdx === 0 || colorIdx === 1)) team = colorIdx;
+    if (team === null) return null;
+    return { idx: team, delta: (sub ? -1 : +1) * amount };
+  }
+  return null;
+}
+
+function tryVoice(alts) {
+  for (const a of alts) {
+    const cmd = parseCommand(a);
+    if (cmd) { addPoint(cmd.idx, cmd.delta); return true; }
   }
   return false;
 }
-
-function voiceLog(obj) {
-  try {
-    if (window.AndroidLog && AndroidLog.write) {
-      AndroidLog.write(JSON.stringify(obj));
-    }
-  } catch (e) {}
-}
-
-window.onSpeechResults = function(alternatives) {
-  if (!alternatives || !alternatives.length) return;
-  const top = alternatives[0];
-  const wake = WAKE_RE.test(top.toLowerCase());
-  const before = { s0: state.scores[0], s1: state.scores[1] };
-  const ok = tryAlternatives(alternatives);
-  const after = { s0: state.scores[0], s1: state.scores[1] };
-  let action = null;
-  if (after.s0 !== before.s0) action = 'blue' + (after.s0 > before.s0 ? '+1' : '-1');
-  else if (after.s1 !== before.s1) action = 'red' + (after.s1 > before.s1 ? '+1' : '-1');
-  voiceLog({ event: 'result', alts: alternatives, wake, executed: ok, action });
-
-  if (ok) {
-    showHeard('✓ ' + top, '#10b981');
-  } else if (wake) {
-    showHeard('? ' + top, '#f59e0b');
-  } else {
-    showHeard(top, '#64748b');
-  }
+window.onSpeechResults = function(alts) {
+  if (!alts || !alts.length) return;
+  const top = alts[0];
+  const ok = tryVoice(alts);
+  if (ok) showHeard('✓ ' + top, '#10b981');
+  else showHeard(top, '#64748b');
+};
+window.onSpeechResult = function(text) { if (text) onSpeechResults([text]); };
+window.onMicPermission = function(s) {
+  if (s === 'granted' && micOn) Speech.start();
+  else if (s === 'denied') { micOn = false; micBtn.classList.remove('on','hearing','armed'); showHeard('Mic denied'); }
 };
 
-// Backwards compat
-window.onSpeechResult = function(text) {
-  if (text) onSpeechResults([text]);
-};
-
-window.onMicPermission = function(state) {
-  if (state === 'granted' && micOn) {
-    AndroidSpeech.start();
-  } else if (state === 'denied') {
-    micOn = false;
-    micBtn.classList.remove('on', 'hearing');
-    showHeard('Microphone permission denied');
-  }
-};
-
+// ---------- Boot ----------
 loadState();
+populateOpt();
 render();
 </script>
 </body>
