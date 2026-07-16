@@ -416,12 +416,33 @@
   .round-actions .cancel:active { background: #334155; }
   .round-hint { font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.75rem; }
   /* Darts */
-  .dart-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; margin: 0.4rem 0 0.75rem; }
-  .dart-num-btn {
-    padding: 0.65rem 0; border-radius: 0.5rem; border: 1px solid #334155;
-    background: #0f172a; color: #fff; font-size: 1rem; font-weight: 700;
-    cursor: pointer; touch-action: manipulation;
+  #dartModal .modal-card { display: flex; flex-direction: column; max-height: 92vh; max-height: 92dvh; }
+  #dartModal #dmStep1 { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  #dartModal #dmStep1 .modal-body { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 0.5rem 0.9rem 0.75rem; }
+  .dart-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-auto-rows: minmax(0, 1fr);
+    gap: 0.35rem;
+    flex: 1;
+    min-height: 0;
+    margin: 0.4rem 0 0.4rem;
   }
+  .dart-num-btn {
+    padding: 0.3rem 0; border-radius: 0.5rem; border: 1px solid #334155;
+    background: #0f172a; color: #fff; font-size: 1.4rem; font-weight: 800;
+    cursor: pointer; touch-action: manipulation;
+    display: flex; align-items: center; justify-content: center;
+    -webkit-user-select: none; user-select: none;
+    transition: transform 0.05s, background 0.15s;
+  }
+  .dart-num-btn.holding {
+    background: #059669;
+    border-color: #10b981;
+    transform: scale(0.94);
+    box-shadow: 0 0 0 2px rgba(16,185,129,0.4);
+  }
+  .dart-tip { text-align: center; color: #64748b; font-size: 0.7rem; margin: 0.15rem 0 0.35rem; }
   .dart-num-btn:active { background: #334155; }
   .dart-num-btn.bull { grid-column: span 2; background: #b91c1c; }
   .dart-num-btn.miss { grid-column: span 3; background: #64748b; }
@@ -510,7 +531,7 @@
     <button class="ctl danger" onclick="resetMatch()">Reset</button>
   </div>
 
-  <div class="credit">@marcomalandro · v2.5.2</div>
+  <div class="credit">@marcomalandro · v2.6</div>
 
   <div class="heard" id="heard"></div>
 
@@ -523,6 +544,7 @@
         </div>
         <div class="modal-body">
           <div class="dart-grid" id="dartNumGrid"></div>
+          <div class="dart-tip">Tap for ring picker · Hold ½ sec for single</div>
           <div class="round-actions">
             <button class="cancel" onclick="closeDart()">Cancel</button>
           </div>
@@ -666,11 +688,13 @@ const modeSel = document.getElementById('mode');
 
 // ---------- Snapshots / Undo ----------
 function snapshot() {
+  stopCelebration();
   state.history.push(JSON.parse(JSON.stringify({ pp: state.pp, gen: state.gen, sp: state.sp, dart: state.dart })));
   if (state.history.length > 100) state.history.shift();
 }
 function undo() {
   if (state.history.length === 0) return;
+  stopCelebration();
   const prev = state.history.pop();
   state.pp = prev.pp; state.gen = prev.gen; state.sp = prev.sp;
   if (prev.dart) state.dart = prev.dart;
@@ -752,7 +776,35 @@ function checkSpadesWin() {
   }
 }
 
+const CELEBRATION_PALETTE = ['#fbbf24','#10b981','#3b82f6','#ef4444','#a855f7','#f97316','#ec4899'];
+const CELEBRATION_GRACE_MS = 900;
+let confettiContainer = null;
+let confettiInterval = null;
+let confettiStartedAt = 0;
+function spawnConfettiPiece() {
+  if (!confettiContainer) return;
+  const p = document.createElement('div');
+  p.className = 'confetti-piece';
+  p.style.left = Math.random() * 100 + '%';
+  p.style.background = CELEBRATION_PALETTE[Math.floor(Math.random() * CELEBRATION_PALETTE.length)];
+  p.style.animationDuration = (2 + Math.random() * 2) + 's';
+  if (Math.random() > 0.5) p.style.borderRadius = '50%';
+  confettiContainer.appendChild(p);
+  setTimeout(() => p.remove(), 4500);
+}
+function maybeStopCelebration() {
+  if (!confettiInterval) return;
+  if (Date.now() - confettiStartedAt < CELEBRATION_GRACE_MS) return;
+  stopCelebration();
+}
+function stopCelebration() {
+  if (confettiInterval) { clearInterval(confettiInterval); confettiInterval = null; }
+  if (confettiContainer) { confettiContainer.remove(); confettiContainer = null; }
+  document.removeEventListener('touchstart', maybeStopCelebration);
+  document.removeEventListener('mousedown', maybeStopCelebration);
+}
 function celebrate(winner, name) {
+  stopCelebration();
   if (navigator.vibrate) navigator.vibrate([180, 90, 180, 90, 400]);
   const banner = document.createElement('div');
   banner.className = 'celebration-banner';
@@ -762,26 +814,23 @@ function celebrate(winner, name) {
   setTimeout(() => banner.classList.remove('show'), 2400);
   setTimeout(() => banner.remove(), 3000);
 
-  const container = document.createElement('div');
-  container.className = 'confetti-container';
-  document.body.appendChild(container);
-  const pal = ['#fbbf24','#10b981','#3b82f6','#ef4444','#a855f7','#f97316','#ec4899'];
-  for (let i = 0; i < 100; i++) {
-    const p = document.createElement('div');
-    p.className = 'confetti-piece';
-    p.style.left = Math.random() * 100 + '%';
-    p.style.background = pal[Math.floor(Math.random() * pal.length)];
-    p.style.animationDelay = (Math.random() * 1.2) + 's';
-    p.style.animationDuration = (2 + Math.random() * 2) + 's';
-    if (Math.random() > 0.5) p.style.borderRadius = '50%';
-    container.appendChild(p);
-  }
-  setTimeout(() => container.remove(), 5000);
+  confettiContainer = document.createElement('div');
+  confettiContainer.className = 'confetti-container';
+  document.body.appendChild(confettiContainer);
+  confettiStartedAt = Date.now();
+  // Initial burst
+  for (let i = 0; i < 80; i++) setTimeout(spawnConfettiPiece, Math.random() * 1000);
+  // Continuous rain
+  confettiInterval = setInterval(spawnConfettiPiece, 180);
+  // Dismiss on any tap after the grace period
+  document.addEventListener('touchstart', maybeStopCelebration);
+  document.addEventListener('mousedown', maybeStopCelebration);
 }
 
 // ---------- Reset / next ----------
 function resetMatch() {
   if (!confirm('Reset match?')) return;
+  stopCelebration();
   const m = state.mode;
   if (m === 'pingpong') Object.assign(state.pp, { scores: [0,0], games: [0,0], server: 0, celebrated: false });
   if (m === 'general') state.gen.scores = new Array(6).fill(0), state.gen.celebrated = false;
@@ -794,6 +843,7 @@ function resetMatch() {
   render(); saveState();
 }
 function newGame(userInit) {
+  stopCelebration();
   const m = state.mode;
   if (m === 'pingpong') {
     if (userInit && !state.pp.celebrated && !confirm('Start next game? Current scores reset.')) return;
@@ -1252,14 +1302,14 @@ function populateDartGrid() {
     b.type = 'button';
     b.className = 'dart-num-btn';
     b.textContent = i;
-    b.onclick = () => selectDartNumber(i);
+    attachDartNumHandler(b, i);
     grid.appendChild(b);
   }
   const bull = document.createElement('button');
   bull.type = 'button';
   bull.className = 'dart-num-btn bull';
   bull.textContent = 'Bull (25)';
-  bull.onclick = () => selectDartNumber(25);
+  attachDartNumHandler(bull, 25);
   grid.appendChild(bull);
   const miss = document.createElement('button');
   miss.type = 'button';
@@ -1267,6 +1317,52 @@ function populateDartGrid() {
   miss.textContent = 'Miss (0)';
   miss.onclick = () => { closeDart(); applyDartValue(0, 0, 0); };
   grid.appendChild(miss);
+}
+
+const DART_LONGPRESS_MS = 500;
+function attachDartNumHandler(btn, n) {
+  let timer = null;
+  let handled = false;
+  let touchActive = false;
+
+  const cancelTimer = () => { if (timer) { clearTimeout(timer); timer = null; } };
+  const clearHold = () => { btn.classList.remove('holding'); };
+
+  const startPress = () => {
+    handled = false;
+    cancelTimer();
+    btn.classList.add('holding');
+    timer = setTimeout(() => {
+      timer = null;
+      handled = true;
+      if (navigator.vibrate) navigator.vibrate(30);
+      clearHold();
+      closeDart();
+      applyDartValue(n, n, 1);
+    }, DART_LONGPRESS_MS);
+  };
+
+  const finishPress = () => {
+    cancelTimer();
+    clearHold();
+    if (handled) { handled = false; return; }
+    selectDartNumber(n);
+  };
+
+  const abortPress = () => {
+    cancelTimer();
+    clearHold();
+    handled = false;
+  };
+
+  btn.addEventListener('touchstart', () => { touchActive = true; startPress(); }, { passive: true });
+  btn.addEventListener('touchend', () => { finishPress(); touchActive = false; }, { passive: true });
+  btn.addEventListener('touchcancel', () => { abortPress(); touchActive = false; }, { passive: true });
+  btn.addEventListener('touchmove', abortPress, { passive: true });
+
+  btn.addEventListener('mousedown', (e) => { if (touchActive || e.button !== 0) return; startPress(); });
+  btn.addEventListener('mouseup', (e) => { if (touchActive || e.button !== 0) return; finishPress(); });
+  btn.addEventListener('mouseleave', abortPress);
 }
 function selectDartNumber(n) {
   dartPendingNum = n;
